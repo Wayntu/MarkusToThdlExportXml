@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="author" content="RCDH" />
+		<meta http-equiv="X-UA-Compatible" content="IE=100" /> <!-- IE mode -->
+		<!--<meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+		<style>
+			*{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box}
+			/* Extract from normalize.css by Nicolas Gallagher and Jonathan Neal git.io/normalize */
+			html{-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}body{margin:0}
+			article,aside,details,figcaption,figure,footer,header,hgroup,main,menu,nav,section,summary{display:block}
+			audio,canvas,video{display:inline-block;vertical-align:baseline}
+			audio:not([controls]){display:none;height:0}[hidden],template{display:none}
+			a{background-color:transparent}a:active,a:hover{outline:0}abbr[title]{border-bottom:1px dotted}
+			dfn{font-style:italic}mark{background:#ff0;color:#000}
+			small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+			sup{top:-0.5em}sub{bottom:-0.25em}
+			img{border:0}svg:not(:root){overflow:hidden}figure{margin:1em 40px}
+			hr{-moz-box-sizing:content-box;box-sizing:content-box}
+			code,kbd,pre,samp{font-family:monospace,monospace;font-size:1em}
+			button,input,select,textarea{font:inherit;margin:0}
+			button{overflow:visible}button,select{text-transform:none}
+			button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}
+			button[disabled],html input[disabled]{cursor:default}
+			button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+			input[type=checkbox],input[type=radio]{padding:0}
+			input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{height:auto}
+			input[type=search]{box-sizing:content-box;-webkit-appearance:textfield;-moz-box-sizing:content-box;-webkit-box-sizing:content-box}
+			input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-search-decoration{-webkit-appearance:none}
+			fieldset{border:1px solid #c0c0c0;margin:0 2px;padding:.35em .625em .75em}
+			legend{border:0;padding:0}pre,textarea{overflow:auto}
+			/* End extract from normalize.css */
+			html{overflow-x:hidden;text-align:center;}
+			body{color:#000000;min-width:800px;max-width:1024px;margin:0px auto;font-size:15px;font-family:"微軟正黑體","標楷體", Arial, Helvetica, sans-serif;text-align:left;line-height:1.5}
+			h1{font-size:36px}
+			h2{font-size:30px;border:solid 1px #AE5A21;color:#FFFFFF;background-color:#ED7D31;padding:10px 10px;min-height:50px;margin:35px 0px 10px;}
+			h3{font-size:24px}
+			h4{font-size:20px}
+			h5{font-size:18px}
+			h6{font-size:16px}
+			h1,h2,h3,h4,h5,h6{font-weight:400;border-radius: 4px;}
+			.intro_box{font-size:20px;border:solid 1px #41719C;color:#FFFFFF;background-color:#5B9BD5;min-height:50px;padding:10px 10px;border-radius: 4px;}
+			.intro_content_box{font-size:30px;width:90%;margin:5px auto;}
+			.intro_img_box{border:0;text-align:center;}
+			.intro_img_box img{width:90%;margin:5px auto;border: 1px solid #ddd;border-radius: 4px;padding: 5px;}
+		</style>
+	</head>
+	<body>
+		<header>
+		</header>
+		<h2>如何利用MARCUS標記文件中的姓名、地名、官名與時間。</h2>
+		<div class = "intro_content_box">MARCUS網址 <a href="http://dh.chinese-empires.eu/beta/" target="_blank">http://dh.chinese-empires.eu/beta/</a></div>
+		<div class = "intro_img_box"><img src="image/01.jpg"></div>
+		<div class = "intro_box">
+			1.此處以Docusky提供之續紅樓夢 CDRC_Chapter_017.txt 作為範例文本<br/>
+			2.確認欲上傳之txt文檔為UTF-8格式<br/>
+			3.上傳成功後，選擇「二B：手動標記」<br/>
+		</div>
+		<div class = "intro_img_box"><img src="image/02.jpg"></div>
+		<div class = "intro_box">
+			進入標記頁面後，左側為全文，右側為標記工作區，可切換多種標記選項。<br/>
+			1.在全文內框出欲標記的人名或地名，會出現標記對話框。
+		</div>
+		<div class = "intro_img_box"><img src="image/03.jpg"></div>
+		<div class = "intro_box">
+			2.將人名「薛蟠」反白後，點「姓名」，再點「存檔」， 「薛蟠」呈現為紅色，標示完成。
+		</div>
+		<div class = "intro_img_box"><img src="image/04.jpg"></div>
+		<div class = "intro_box">文章標示完成後，保存或輸出選「MARCUS存檔」，將marcus.html檔存至電腦。</div>
+		<div class = "intro_img_box"><img src="image/05.jpg"></div>
+		<h2>如何將MARCUS標記後的marcus.html檔轉換為ThdlExportXml格式。</h2>
+		<div class = "intro_img_box"><img src="image/06.jpg"></div>
+		<div class = "intro_box">1.選擇欲上傳的marcus.html檔<br/>
+								2.命名文獻集<br/>
+								3.進行轉換
+		</div>
+		<div class = "intro_img_box"><img src="image/07.jpg"></div>
+		<div class = "intro_img_box"><img src="image/08.jpg"></div>
+		<h2>如何將轉換好的ThdlExportXml上傳至Docusky建立資料庫。</h2>
+		<div class = "intro_box">建立資料庫必須先登入帳號密碼始能進行。</div>
+		<div class = "intro_img_box"><img src="image/09.jpg"></div>
+		<div class = "intro_img_box"><img src="image/10.jpg"></div>
+		<div class = "intro_box">
+			個人首頁：<br/>
+			可以看見已經建立完成的資料庫列表，也可以新增或刪除資料庫
+		</div>
+		<div class = "intro_img_box"><img src="image/11.jpg"></div>
+		<div class = "intro_box">
+			點選文獻集續紅樓夢(1)，即可瀏覽全文，及先前在MARCUS上標記的詞頻。
+		</div>
+		<div class = "intro_img_box"><img src="image/12.jpg"></div>
+		<footer>
+		</footer>
+	</body>
+</html>

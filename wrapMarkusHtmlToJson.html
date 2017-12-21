@@ -1,0 +1,125 @@
+<!doctype html>   <!-- note: code written with utf8, not ANSI, encoding -->
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <script src="../../js/jquery.min.js"></script>
+   <script src="../../js/FileSaver.min.js"></script>      <!-- 儲存檔案 -->
+   <style type="text/css">
+      body { margin: 0; font-family: Microsoft JhengHei;}
+      div.headerBar { background-color:blue; color:white; padding:8px; text-align: center; }
+      div.contentArea { padding: 12px; }
+      div.outputArea { padding: 12px; display:none; }
+   </style>
+</head>
+<body>
+   <div id="headerBar" class="headerBar">
+      <table width="100%">
+      <tr><td>將數個 XML-valid 的 Markus 輸出檔（HTML 格式）包裝成一個 JSON 檔，便於進行測試</td>
+          <td align="right"><a href="../../PublicTools.html" style="color:white">工具集</a></td></tr>
+      </table>
+   </div>
+   <div class="contentArea">
+      <table>
+         <tr><td valign="top"><nobr>說明：</nobr></td><td>
+         此工具可讀入多份 Markus 格式輸出的 HTML 檔。若它們均為 valid XML 格式，則將這些檔案包裝成 [obj, obj, ...] 的 JSON 檔。
+         其中，obj 為 {filename:filename, content:markus_html} 的 JavaScript 物件。
+      </table>
+   </div>
+   <br/>
+      
+   <div class="contentArea">
+      <b>1. 讀入 Markus HTML 輸出檔:</b>
+      <ul style="line-height:180%">
+      <li>請輸入文獻集名稱：<input id="inputCorpus" type="text" size="30" value="MyCorpus" autocomplete="off"/></li>
+      <li>選擇 Markus 檔案：<input id="selectInFile" type="file" multiple="multiple" autocomplete="off" accept=".html"/></li>
+      </ul>
+   </div>
+   <br/><br/>
+   
+   <div id='divOutputArea' class="outputArea">
+      <b>2. 輸出彙整後的 JSON 檔:</b>
+      <div style="margin-left:15px">欲儲存的 JSON 檔名：
+         <input type="text" id="outFilename" value="MyMarkusFiles.json" size="45" autocomplete="off"></input>
+         <button id="generateMarkusJson">點我儲存</button>
+      </div>
+   </div>
+</body>
+<script type="text/javascript">   
+   var MyMarkusObj = {};      // MyMarkusObj = { corpus:corpusName, files: [fileObj, fileObj, ...] }, and fileObj = { filename(string), content(string -- xml-valid markus html) }
+   var MyRemainingFiles = 0;
+
+   function htmlAttrEscapeJsonStr(s) {
+      return s.replace(/\"/g, "&#x22;").replace(/\'/g, "&#x27;");
+   }
+   
+   function htmlAttrUnescapeJsonStr(s) {
+      return s.replace(/&#x22;/g, '"').replace(/&#x27;/g, "'");
+   }
+   
+   function htmlEncode(value){
+     // create a in-memory div, set it's inner text, and then grab the encoded contents back out.  
+     // this div never exists on the page.
+     return $('<div/>').text(value).html();
+   }
+   
+   function htmlDecode(value){
+     return $('<div/>').html(value).text();
+   }   
+   
+   function readHtmlFile(file, evt) {
+      var filename = file.name;
+      var fr = new FileReader();
+      
+      MyMarkusObj.files = [];
+      fr.addEventListener('load', function(evt) { 
+         var s = evt.target.result;
+         s = s.replace(/&nbsp;/g, ' ');
+         s = s.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD]/g, '');      // 2016-05-09: remove invalid XML characters
+         MyMarkusObj.files.push({ filename: filename, content: s });
+         MyRemainingFiles--;
+         if (MyRemainingFiles == 0) $("#divOutputArea").show();
+      });
+      fr.readAsText(file, 'utf-8');
+   }
+   
+   function handleSelectInFile(evt) {        
+      var files = evt.target.files;           // FileList object
+      
+      // 選完後，若文獻集名稱仍為預設名稱，則更新 output filename
+      if ($("#outFilename").val() === 'MyMarkusFiles.json') {
+         var outFilename = $("#outFilename").val().replace(/^(.+)\.json$/, "$1(" + files.length + ").json");
+         $("#outFilename").val(outFilename);
+      }
+      var corpusName = $("#inputCorpus").val().replace(new RegExp("\\*\\+\\?!@~&^%/\\\\","g"),'_');
+      if (corpusName == '') corpusName = 'MyCorpus';
+      $("#inputCorpus").val(corpusName);
+      MyMarkusObj.corpus = corpusName;
+
+      try {
+         MyRemainingFiles = files.length;
+         for (var i=0; i<files.length; i++) {    // read selected files
+            readHtmlFile(files[i], evt);         // store result to global variable MyMarkusList     
+         }
+      } catch(err) {
+         alert(err.message);
+      }
+   }
+
+   $("#selectInFile").bind('change', function(evt) {
+      handleSelectInFile(evt);
+   });
+
+   $("#generateMarkusJson").click(function(e) {
+      // should move the following computation to Worker...
+      var filename = $("#outFilename").val();
+      
+      var out = JSON.stringify(MyMarkusObj);
+      var blob = new Blob([out], {type: "text/plain;charset=utf-8"});
+      saveAs(blob, filename);             // requires FileSaver.js
+   });
+   
+   $(document).ready(function() { 
+   });
+   
+</script>
+</html>

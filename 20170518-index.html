@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html>
+	<head>
+      <meta charset="utf-8" />
+      <title>Markus to DocuSky Converter</title>
+      <script src="js/utility.js"></script>
+      <script src="js/STAMLTransformer.js"> </script>
+      <script src="js/MarkusToSTAMLFuncs.js"></script>
+      <script src="js/PlainTextToSTAMLFuncs.js"></script>
+      <script src="js/ThdlExportXMLToSTAMLFuncs.js"></script>
+      <script src="js/FileSaver.min.js"></script>
+      <script src="../../js/jquery.min.js"></script>
+      <script src="../../js.ui/docusky.ui.manageDbListSimpleUI.js"></script>
+   <script>
+      var inputFormat = 'MARKUS';
+      var outputFormat = 'THDLExportXML';
+      var corpusXmlList = [];       // Tu: add for output multiple corpuses
+
+      function tryParseXML(xmlString, xmlFilename) {
+         try {
+            var parser = new DOMParser();
+            var parsererrorNS = parser.parseFromString('INVALID', 'text/xml').getElementsByTagName("parsererror")[0].namespaceURI;
+            var dom = parser.parseFromString(xmlString, 'text/xml');
+            if (dom.getElementsByTagNameNS(parsererrorNS, 'parsererror').length > 0) {
+              throw new Error('Error: the input "' + xmlFilename + '" may not be a valid XML file!');
+            }
+            return dom;
+         } catch(err) {
+            alert(err.message);
+            return null;
+         }
+      }
+      
+      function interruptForAnimation() {
+         $.ajax({ url: "http://www.google.com", async: false});    // for animation -- only works in Firefox (fails in Chrome)
+      }
+      
+      var split = { "THDLExportXML": function(data){
+         var contents = [];
+         for( var i = 0 ; i < data.length ; ++i ){
+            //var parser = new DOMParser();
+      		//var xmlDoc = parser.parseFromString(data[i].content, "text/xml");
+      		var xmlDoc = tryParseXML(data[i].content);         // 2016-09-16
+      		if (xmlDoc === null) return null;
+      
+            var documents = xmlDoc.getElementsByTagName("document");
+            for( var j = 0 ; j < documents.length ; ++j ){
+               var newXML = (new DOMParser()).parseFromString("<ThdlPrototypeExport><documents></documents></ThdlPrototypeExport>", "text/xml");
+               appendAllChildren( (new XMLSerializer()).serializeToString(documents[j]), newXML.getElementsByTagName("documents")[0]);
+               contents.push({
+                  name: data[i].name + "(" + j + ")",
+                  content: (new XMLSerializer()).serializeToString(newXML)
+               });
+            }
+         }
+         return contents;
+      }};
+      
+      var merge = {
+         "THDLExportXML": function(data, replaceCorpus){
+            if (typeof(replaceCorpus)==='undefined') replaceCorpus = true;          // 總是用 <input type='text' id='corpus'> 的值作為輸出的 corpus?
+            var corpusVal = document.getElementById("corpus").value;
+            var xmlStr = "<ThdlPrototypeExport>" +
+                         "<corpus name='*'><feature_analysis></feature_analysis></corpus>" +     // put Udef_xxx here...
+                         "<documents></documents>" +
+                         "</ThdlPrototypeExport>";
+            var newXML = (new DOMParser()).parseFromString(xmlStr, "text/xml");
+            
+            var corpusHash = {};
+            for ( var i = 0 ; i < data.length ; ++i ) {
+               var parser = new DOMParser();
+               var xmlDoc = parser.parseFromString(data[i].content, "text/xml");
+      
+               var documents = xmlDoc.getElementsByTagName("document");
+               for ( var j = 0 ; j < documents.length ; ++j ) {
+                  if (replaceCorpus) {
+                     while( documents[j].getElementsByTagName("corpus").length > 0 ) {
+                        documents[j].removeChild(documents[j].getElementsByTagName("corpus")[0]);
+                     }
+                     appendAllChildren("<corpus>" + corpusVal + "</corpus>", documents[j]);
+                  }
+                  appendAllChildren( (new XMLSerializer()).serializeToString(documents[j]), newXML.getElementsByTagName("documents")[0]);
+               }
+            
+               //alert(JSON.stringify(GvarThdlExport['featureAnalysisTags']));    // 利用 global variable 取得 side-effects
+               var corpusNodes = newXML.querySelectorAll("document > corpus");
+               for (var k=0; k<corpusNodes.length; k++) {
+                  corpusHash[corpusNodes[k].childNodes[0].nodeValue] = 1;     // nodeValue can only apply to retrieving text node value
+               }
+               //alert(JSON.stringify(corpusHash));
+            
+               var tagsHash = {};
+               GvarThdlExport['featureAnalysisTags'].map(function(e) { tagsHash[e] = 1; });
+               var myFeatureAnalysisTags = [];
+               for (var key in tagsHash) myFeatureAnalysisTags.push(key);
+               if (myFeatureAnalysisTags.length > 0) {
+                  var tagsXmlList = [];
+                  for (var k=0; k<myFeatureAnalysisTags.length; k++) {
+                     var tag = myFeatureAnalysisTags[k];
+                     tagsXmlList.push("<tag type='contentTagging' name='" + tag + "' default_category='" + tag + "' default_sub_category='-'/>");
+                  }
+                  appendAllChildren(tagsXmlList.join("\r\n"), newXML.getElementsByTagName("feature_analysis")[0]);
+               }
+               //alert(JSON.stringify((new XMLSerializer()).serializeToString(newXML)));
+            }
+            //alert(newXML.getElementsByTagName("document").length);
+       
+            return [{
+               name: document.getElementById("corpus").value,
+               content: (new XMLSerializer()).serializeToString(newXML)
+            }];
+         }
+      };
+      
+      var funcs = { "text": PlainTextToSTAMLFuncs, 
+                    "STAML": { transform: function(id){return id;}, transformBack: function(id){return id;}},
+                    "MARKUS": MarkusToSTAMLFuncs, 
+                    "THDLExportXML": ThdlExportXMLToSTAMLFuncs };
+      
+      var subfilename = {
+         "text": ".txt",
+         "STAML": ".txt",
+         "MARKUS": ".html",
+         "THDLExportXML": ".xml"
+      }
+      
+      var transfer = function(inputFormat, outputFormat, contents){
+         $("#divLoadingContainer").css({top:'40%', left:'40%'}).show();
+         //$("#divWorkingProgress").text('test');
+         if( split[inputFormat] ){
+           contents = split[inputFormat](contents);
+         }
+        
+         var inputTransformer = ((inputFormat !== "STAML")? new STAMLTransformer(funcs[inputFormat]) : funcs[inputFormat] );
+         var outputTransformer = ((outputFormat !== "STAML")? new STAMLTransformer(funcs[outputFormat]) : funcs[outputFormat] );
+         
+         var result = contents.map( function(data) {
+            interruptForAnimation();
+            // 若轉換成 STAML 途中有錯漏，就很可能是因為以下的 transform() 沒處理好            
+            //alert('MY1: ' + JSON.stringify(data));        // Markus output format  
+            var staml = inputTransformer.transform(data.content);
+            //alert('MY2: ' + JSON.stringify(staml));       // STAML format       
+            return {
+               name: data.name,
+               content: staml
+            }; 
+         });
+        
+         result = result.map( function(data){ 
+            interruptForAnimation();
+            var extra = null;
+            if (inputFormat == 'MARKUS' && outputFormat == 'THDLExportXML') {
+               // 2017-03-09: Markus 似乎有 bugs，其內含的檔名可能會重覆（例如太平廣記的樣本）...
+               //             在此很醜陋地用讀入的檔名，暴力置換掉 STAML 中的 <filename> 的檔名...
+               if (data.name) {
+                  data.content = data.content.replace(new RegExp("<filename>([^<]*)</filename>"), "<filename>" + data.name + "</filename>");
+                  //alert(JSON.stringify(data.content));      // STAML format
+               }
+            }
+            var xml = outputTransformer.transformBack(data.content);
+            //alert('MY3: ' + JSON.stringify(xml));
+
+            // 20170510: 加上 <doc_source>filename</doc_source>            
+
+            // 20170416: 加上 paragraphs to docs 的處理
+            var jqXmlDoc = $.parseXML(xml);            // returns XMLDocument
+            var jqXml = $(jqXmlDoc);                   // returns jQuery object
+            var jqDocumentNodes = jqXml.find("ThdlPrototypeExport > documents > document");
+            
+            var documentXmlList = jqDocumentNodes.map(function() { 
+               var docNode = this;
+               var paragraphs = $(this).find("doc_content > Paragraph");
+               var radioVal = $("input[name=radioParagraphToDoc]:checked").val();
+               if ($("#inputParagraphAsDoc:checked").length > 0 && paragraphs.length > 1) {
+                  var cloneDoc = $(docNode).clone();
+                  cloneDoc.find("doc_content").html('');
+                  var newDocList = paragraphs.map(function(idx) {
+                     var newDoc = cloneDoc.clone();
+                     var origFilename = newDoc.attr("filename");
+                     var paragraphId = $(this).attr("RefId");
+                     var newFilename = origFilename + "_p" + ("0000" + (idx + 1)).substr(-4,4);
+                     if (radioVal == 2 && paragraphId) newFilename = paragraphId;
+                     newDoc.attr("filename", newFilename);
+                     newDoc.find("filename").text(newFilename);
+                     newDoc.append("<doc_source>" + origFilename + "</doc_source>");    // 2017-05-03
+                     newDoc.find("doc_content").html(this.outerHTML);
+                     return newDoc.get(0).outerHTML;
+                  });
+                  //alert(JSON.stringify(newDocList.toArray()));
+                  return newDocList.toArray();
+               }
+               else {
+                  var origFilename = $(this).attr("filename");
+                  $(this).append("<doc_source>" + origFilename + "</doc_source>");    // 2017-05-09
+                  return [this.outerHTML];
+               }
+            });
+
+            jqXml.find("ThdlPrototypeExport > documents").first().html(documentXmlList.toArray().join("\r\n"));
+            var xmlObj = jqXml.find("ThdlPrototypeExport").get(0);
+            xml = (new XMLSerializer()).serializeToString(xmlObj);
+            //alert(xml);
+
+            return {
+               name: data.name,
+               content: xml,
+            }; 
+         });
+ 
+         //alert(JSON.stringify(result)); 
+ 
+         if( merge[outputFormat] ){
+            result = merge[outputFormat](result, true);     // true: always replaceCorpus
+         }
+         
+         // alert(JSON.stringify(result)); 
+         $("#divLoadingContainer").hide();
+         return result;
+      }
+      
+      window.addEventListener("load", function() {
+         document.getElementById("personNameTagIdAsFeature").addEventListener("click", function(e) {
+            GvarThdlExport['personNameTagIdAsFeature'] = this.checked;   // true or false
+         });
+         document.getElementById("placeNameTagIdAsFeature").addEventListener("click", function(e) {
+            GvarThdlExport['placeNameTagIdAsFeature'] = this.checked;   // true or false
+         });
+         document.getElementById("datetimeTagIdAsFeature").addEventListener("click", function(e) {
+            GvarThdlExport['datetimeTagIdAsFeature'] = this.checked;   // true or false
+         });
+
+         document.getElementById("constructCorpus").addEventListener("click", function(e){
+            var filesContent = [];
+            var loadFinished = 0;
+            [].map.call(document.getElementById("fileselect").files, function(f, index){
+               var r = new FileReader();
+               r.onload = function(e) { 
+      	         var contents = e.target.result;
+                  contents = contents.replace(/&nbsp;/g, ' ');          // 2017-04-23: replace HTML entities not valid in XML（若轉為 &#160; 後續處理因無法去除這空白，會比較麻煩）
+                  var xmlDoc = tryParseXML(contents, f.name);           // 2017-03-29
+                  if (xmlDoc === null) return null;
+                  filesContent[index] = {content: contents, name: f.name.substring(0, f.name.lastIndexOf("."))};
+            
+                  ++loadFinished;
+                  if (loadFinished === document.getElementById("fileselect").files.length ){
+                     var result = transfer(inputFormat, outputFormat, filesContent);
+                     //var HTMLContent = "<ul>";
+                     //result.map( function(data, index){
+                     //   HTMLContent += "<li><a download='" + data.name + subfilename[outputFormat] + "' href='data:text/plain," + encodeURIComponent( data.content ) + "' target='_blank'>" + data.name + subfilename[outputFormat] + "</a></li>";
+                     //});
+                     //HTMLContent += "</ul>"; 
+                     corpusXmlList.push({ name: result[0].name, content: result[0].content });
+                     var HTMLContent = "<ol>";
+                     corpusXmlList.map( function(data, index) {
+                        HTMLContent += "<li>" + data.name + "</li>";
+                     });
+                     HTMLContent += "</ol>";
+                     document.getElementById("outputFiles").innerHTML = HTMLContent;
+                     document.getElementById("outputField").style = "display:block";
+                  }
+               }
+               r.readAsText(f);
+            });
+            var dateStr = (new Date()).yyyymmdd();
+            $("#dbTitle").val(dateStr + '-db-' + $("#corpus").val());
+         });
+
+         document.getElementById("saveFile").addEventListener("click", function(e) {
+            var result = merge[outputFormat](corpusXmlList, false);     // don't replace corpus
+            var xml = result[0].content;
+
+            // 儲存         
+            var blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
+            var dateStr = (new Date()).yyyymmdd();
+            var filename = dateStr + '-' + result[0].name + '.xml';     // after merging, result[0].name will be the valud in element id="corpus"
+            saveAs(blob, filename);             // requires FileSaver.js
+         });
+
+      });      
+
+      // --------------------------------------------------------------------------
+      
+      var docuSkyObj = null;
+      var myVar = {};
+   
+      function succFun() {
+         // hide the widget, and then do uploading
+         docuSkyObj.hideWidget();
+         
+         var result = merge[outputFormat](corpusXmlList, false);     // don't replace corpus
+         var xml = result[0].content;
+
+         var dbTitle = $("#dbTitle").val().trim();
+         if (dbTitle === '') dbTitle = (new Date()).yyyymmdd() + '-db';
+         var filename = dbTitle + '.xml';
+         
+         var url = docuSkyObj.uploadXmlFilesToBuildDbJson;
+         var formData = { dummy: {name: 'dbTitleForImport', value: dbTitle }};
+         var nameVal = 'importedFiles[]';      // <input type="file" name="importedFiles[]" ...>
+         formData['file'] = {value: xml, filename: filename, name:nameVal};
+         //alert(JSON.stringify(formData));
+         myVar.uploadProgressId = docuSkyObj.uploadProgressId;
+         docuSkyObj.uploadProgressId = 'myUploadProgressId';     // 在此硬改掉 uploadProgressId，成功上載後再覆蓋回來 
+         $("#myUploadProgressId").show();
+         
+         docuSkyObj.uploadMultipart(url, formData, myRestoreFun);
+      }
+      
+      function myRestoreFun() {
+         // 放回原先的 uploadProgressId
+         docuSkyObj.uploadProgressId = myVar.uploadProgressId;
+      }
+
+      function getUrlQueryParameter(url, key) {       // get url query parameters
+         key = key.replace(/[*+?^$.\[\]{}()|\\\/]/g, "\\$&"); // escape RegEx meta chars
+        var match = url.search.match(new RegExp("[?&]"+key+"=([^&]+)(&|$)"));
+        return match && decodeURIComponent(match[1].replace(/\+/g, " "));
+      }
+
+      // 2017-05-17: markusObj 可為 SimpleMarkusObj: { corpus, files, (settings)}，或者是陣列 [ SimpleMarkusObj, SimpleMarkusObj, ...]
+      function parseExternalInputs(markusObj) {
+         // 應該顯示：目前需處理幾個檔案，轉換需花上一些時間...
+         if (!Array.isArray(markusObj)) markusObj = [ markusObj ];         // convert to an array of one element
+         for (var i=0; i<markusObj.length; i++) {
+            var corpusObj = markusObj[i]; 
+            document.getElementById("corpus").value = corpusObj.corpus;    // transfer() 會用到這個 HTML tag 的值
+
+            // 以下的設定為 optional，因此可能得到 undefined 值
+            var personTagIdAsTerm = corpusObj.personTagIdAsTerm;           // undefined, 0, 1
+            var placeTagIdAsTerm = corpusObj.placeTagIdAsTerm;             // undefined, 0, 1
+            var dateTagIdAsTerm = corpusObj.dateTagIdAsTerm;               // undefined, 0, 1
+            var passageToDoc = corpusObj.passageToDoc;                     // undefined, 'false', 'default', 'passageId'
+            personTagIdAsTerm = (personTagIdAsTerm && personTagIdAsTerm === '0') ? false : true;
+            placeTagIdAsTerm  = (placeTagIdAsTerm  && placeTagIdAsTerm === '0')  ? false : true;
+            dateTagIdAsTerm   = (dateTagIdAsTerm && dateTagIdAsTerm === '0')     ? false : true;
+            if (passageToDoc && passageToDoc !== 'passageId') passageToDoc = 'default';
+            else passageToDoc = false;
+            
+            // 設定頁面中的 HTML tag 值 -- transfer() 會參考這些值來進行轉換
+            $("#personNameTagIdAsFeature").prop("checked",personTagIdAsTerm);
+            $("#placeNameTagIdAsFeature").prop("checked",personTagIdAsTerm);
+            $("#datetimeTagIdAsFeature").prop("checked",personTagIdAsTerm);
+            $("#inputParagraphAsDoc").prop("checked", (passageToDoc!==false));
+            if (passageToDoc === 'default') $('input:radio[name="radioParagraphToDoc"]').filter('[value="1"]').attr('checked', true);
+            else if (passageToDoc === 'passageId') $('input:radio[name="radioParagraphToDoc"]').filter('[value="2"]').attr('checked', true);
+
+            var filesContent = [];
+            for (var j=0; j<corpusObj.files.length; j++) {
+               var filename = corpusObj.files[j].filename;
+               var content = corpusObj.files[j].content;
+             
+               var xmlDoc = tryParseXML(content, filename);
+               if (xmlDoc === null) return null;
+               filesContent.push({content: content, name: filename.substring(0, filename.lastIndexOf("."))})
+            }
+            //alert(JSON.stringify(filesContent));
+            var result = transfer(inputFormat, outputFormat, filesContent);
+            //alert(JSON.stringify(result));
+            corpusXmlList.push({ name: result[0].name, content: result[0].content });
+         }
+         var HTMLContent = "<ol>";
+         corpusXmlList.map( function(data, index) {
+            HTMLContent += "<li>" + data.name + "</li>";
+         });
+         HTMLContent += "</ol>";
+         document.getElementById("outputFiles").innerHTML = HTMLContent;
+         document.getElementById("outputField").style = "display:block";
+         var dateStr = (new Date()).yyyymmdd();
+         $("#dbTitle").val(dateStr + '-db-' + $("#corpus").val());
+      }
+      
+      $(document).ready(function() { 
+         var me = this;
+         docuSkyObj = docuskyManageDbListSimpleUI;
+         $("#manageDbList").click(function(e) {
+            docuSkyObj.manageDbList(e, succFun);
+         });
+      
+         $("#inputParagraphAsDoc").click(function() {
+            $("#divParagraphToDocOption").toggle();
+         });
+         
+         // 2017-05-17: check if there is a url parameter to fetch Markus outputs
+         var url = getUrlQueryParameter(window.location, 'url');
+         if (url) {
+            $.getJSON(url, function(json) {
+               $("div[class^='divInput']").hide();
+               //alert(JSON.stringify(json));
+               var markusObj = json;
+               if (!markusObj.corpus || !markusObj.files) {
+                  alert("Error: This is not a valid Markus JSON (requires both corpus and files fields)");
+                  return null;
+               }
+               parseExternalInputs(markusObj);
+            }).fail(function() {
+               alert("Failed to fetch JSON from URL: \n" + url);
+            });
+         }
+         
+      });
+   </script>
+   <style type="text/css">
+      body { margin: 0; line-height:160%; font-family: Microsoft JhengHei;}
+      div { line-height:160% }
+      div.headerBar { background-color:#556b2f; color:white; padding:8px; text-align: center; }
+      #content {
+        width: 90%;
+        margin: 10px auto;
+      }
+      
+      #filedrag {
+      	display: none;
+      	font-weight: bold;
+      	text-align: center;
+      	padding: 1em 0;
+      	margin: 1em 0;
+      	color: #555;
+      	border: 2px dashed #555;
+      	border-radius: 7px;
+      	cursor: default;
+      }
+      
+      #filedrag.hover {
+      	color: #f00;
+      	border-color: #f00;
+      	border-style: solid;
+      	box-shadow: inset 0 3px 4px #888;
+      }
+   </style>
+	</head>
+
+   <body>
+   <div id="headerBar" class="headerBar">
+      <table width="100%">
+      <tr><td>我是從 MARKUS 輸出轉 ThdlExportXml 的工具</td>
+          <td align="right"><a href="../../PublicTools.html" style="color:white">工具集</a> | <a href="../../userMainPage.php" style="color:white" target="_blank">個人首頁</a></td></tr>
+      </table>
+   </div>
+
+   <div id="content">
+      <div>
+         <table border="0" width="100%" cellpadding="0" cellspacing="0">
+         <tr><td><nobr>說明：</nobr></td>
+            <td width="96%" align="left">
+               這個工具可以讀入多份 <a href="http://dh.chinese-empires.eu/beta/">MARKUS</a> 標記工具的 .html 輸出檔，
+               將其彙整並轉換成 ThdlExportXml 格式。<br/>
+            </td>
+         </tr>
+         <tr>
+            <td colspan="2">
+               <ul style="margin:3px">
+                  <li>選擇一或多份 MARKUS 的輸出檔，指定彙整後的文獻集名稱後，點選「建構文獻集」鈕。</li>
+                  <li>一個資料庫可包含有多份文獻集。您可重覆 1-4 步驟，建構包含多份文獻集的 ThdlExportXml 檔案。</li>
+                  <!--<li>如果欲將 Markus 標記後的 passages 轉換為 documents，您可以先利用本工具將 Markus 輸出轉成建庫檔，再利用<a href="../RecomposeXML/pickCorpusContentsTool.html">另一份工具</a>達成目標。</li>-->
+               </ul>                      
+            </td>
+         </tr>
+         </table>
+      </div>
+      <a href="tutorial/tutorial.html">Markus 工具的初步教學</a>
+      <br/>
+      <br/>
+     
+      <div class="divInputSteps">請依以下步驟操作：</div>
+      <div id="inputField" class="divInputMarkusFiles">
+         <label for="fileselect"><b>&#8680;</b> 請選擇欲轉換的 MARKUS 輸出檔（可選擇多份檔案）: </label>
+         &#160;<input type="file" id="fileselect" name="fileselect[]" multiple="multiple" accept=".html,.htm"/>
+      </div>
+
+      <div class="divInputTagIdAsTerms">
+         <b>&#8680;</b> 是否要將 TagId 作為詞頻分析的詞彙：
+         <div style="margin-left:20px;">
+            <label for="personNameTagIdAsFeature"><b>a.</b> 若人名標籤具有 id（例如 cbdbid），是否要使用該 id 值作為 Tag Analysis 的詞彙: </label>
+            <input id="personNameTagIdAsFeature" type="checkbox" checked="checked" autocomplete="off">是</input>  
+         </div>
+         <div style="margin-left:20px;"> 
+            <label for="placeNameTagIdAsFeature"><b>b.</b> 若地名標籤具有 id（例如 placename_id），是否要使用該 id 值作為 Tag Analysis 的詞彙: </label>
+            <input id="placeNameTagIdAsFeature" type="checkbox" checked="checked" autocomplete="off">是</input>  
+         </div>
+         <div style="margin-left:20px;"> 
+            <label for="datetimeTagIdAsFeature"><b>c.</b> 若時間標籤具有 id（例如 timeperiod_id），是否要使用該 id 值作為 Tag Analysis 的詞彙: </label>
+            <input id="datetimeTagIdAsFeature" type="checkbox" checked="checked" autocomplete="off">是</input>  
+         </div>
+      </div>
+
+      <div class="divInputPassageToDoc">
+         <b>&#8680;</b> 若想將 passages 轉換成個別獨立的新文件，請勾此選項： <input id="inputParagraphAsDoc" type="checkbox" checked="checked" autocomplete="off">將文件中的段落轉換成文件</nput>
+         <div id="divParagraphToDocOption" style="line-height:170%; padding:10px;">
+            <input type="radio" name="radioParagraphToDoc" value="1" checked="checked" autocomplete="off">（預設值）使用原先的文件檔名，並在其後添加 '_p0000'，其中 '0000' 為段落序號。</input><br/>
+            <input type="radio" name="radioParagraphToDoc" value="2" autocomplete="off">若段落包含有 RefId，則以 RefId 作為新文件的檔名，否則依照預設方式進行處理。</input>
+         </div>
+      </div>
+      
+      <div class="divInputCorpusName">
+         <label for='mergeToCorpus'><b>&#8680;</b> 請輸入這些文件的文獻集名稱: </label><input type='text' id='corpus' size="32" value="我的文獻集" autocomplete="off"/>
+         <div id="submitbutton">
+            <button id="constructCorpus">建構文獻集</button> （標註量較大的文本，可能需要數十秒的轉換時間）  <!-- 進行轉換 -->
+         </div>
+         <br/>
+      </div>
+
+      <div id="outputField" style="display:none">
+         <div style="background-color:#CFCFCF; padding:5px; border-radius:5px;">
+            <b>以下為目前已轉換的文獻集列表（文獻集名稱可重覆）：</b>
+            <div id="outputFiles">&#160;</div>
+         </div>
+         <br/>
+         <div>
+            <b>&#8680;</b> 對以上的文獻集，您可進行以下動作：
+            <ul style="line-height:180%">
+            <li>將這些文獻集彙整成單一的建庫 XML 檔案，然後儲存在本地硬碟：<button id="saveFile">儲存</button></li>
+            <li>或者，您可以輸入資料庫名稱，<input id="dbTitle" name="dbTitle" type="text" size="40" value="default"/><br/>
+                然後直接將轉換結果上載建庫：<span id="manageDbList" style="padding:2px; border:blue 2px solid; background:blue; color:white; border-radius:3px; cursor:pointer">直接建庫</span></li>
+            </ul>
+            <div id='myUploadProgressBoxContainer' style="margin-left:20px; width:400px;">
+               <div class="dsw-uploadprogressbar" id="myUploadProgressId" style="height:30px;">
+                  <div class="dsw-uploadprogressbar-progress">progress</div>
+               </div>
+            </div>
+            <br/><br/>
+            連結：<a href="../../publicTools.html">工具集</a> | <a href="../../userMainPage.php">個人首頁</a>
+            <br/>
+         </div>
+      </div>
+   </div>
+   <!-- for showing progress -->
+   <div id="divLoadingContainer" style="position:absolute; border:3px grey solid; border-radius:6px; background-color:white; font-size:medium; z-index:100; display:none;">
+      <div id="divLoadingSig">
+         <img src="../../webapi/images/loading-circle.gif" width="140" border="0"/>
+      </div>
+      <div id="divWorkingProgress" style="position:absolute; top:60px; width:100%; text-align:center;"></div>
+   </div>
+   </body>
+</html>
