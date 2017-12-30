@@ -83,26 +83,28 @@
         }, 
         "MARKUS": (data, isCorpusReplaced) => {
           if (isCorpusReplaced == undefined) isCorpusReplaced = true;
-          var newXML = (new DOMParser()).parseFromString("<ThdlPrototypeExport><documents></documents></ThdlPrototypeExport>", "text/xml");
+          var xmlDoc = document.implementation.createDocument(null, "div");
+          var doc = xmlDoc.firstChild;
+          doc.setAttribute("class", "doc")
+          doc.setAttribute("filename", "test.txt_markus")
+          var pre = xmlDoc.createElement("pre")
+          pre.setAttribute('contenteditable', 'false')
+          doc.appendChild(pre);
           for (let i in data) {
-            var parser = new DOMParser();
-            var xmlDoc = parser.parseFromString(data[i].content, "text/xml");
-            var documents = xmlDoc.getElementsByTagName("document");
-            console.log(xmlDoc)
-            for (let j in documents) {
-              if (isCorpusReplaced) {
-                console.log(documents)
-                while(documents[j].getElementsByTagName("corpus").length > 0) {
-                  documents[j].removeChild(documents[j].getElementsByTagName("corpus")[0]);
-                }
-                appendAllChildren("<corpus>" + document.getElementById("corpus").value + "</corpus>", documents[j]);
-              }
-              appendAllChildren( (new XMLSerializer()).serializeToString(documents[j]), newXML.getElementsByTagName("documents")[0]);
-            }
+            let parser = new DOMParser();
+            let xmlDoc = parser.parseFromString(data[i].content, "text/xml");
+            let paragraph = xmlDoc.firstChild.firstChild.firstChild
+            let commentItem = paragraph.firstChild
+            paragraph.setAttribute('id', 'passage' + i)
+            commentItem.setAttribute('data-markus-passageid', 'passage' + i)
+            pre.appendChild(paragraph)
           }
+          //var temp = (new XMLSerializer()).serializeToString(xmlDoc)
+          //var xmlDoc = (new DOMParser).parseFromString(temp, 'application/xml')
+
           return [{
-            name: document.getElementById("corpus").value,
-            content: (new XMLSerializer()).serializeToString(newXML)
+            name: "test",
+            content: (new XMLSerializer()).serializeToString(xmlDoc)
           }]
         } 
 
@@ -155,8 +157,7 @@
           })
          if( merge[outputFormat] ){
            result = merge[outputFormat](result, true);
-         }
-         console.log(result)
+         }     
          return result;
       }
       
@@ -189,17 +190,23 @@
                   HTMLContent += "</ol>";
                   document.getElementById("outputFiles").innerHTML = HTMLContent;
                   document.getElementById("outputField").style = "display:block";
+
               }
             }
+            
             r.readAsText(f);
          });
       
       });
 
+
       document.getElementById("saveFile").addEventListener("click", function(e) {
          //var result = merge[outputFormat](corpusXmlList, false);     // don't replace corpus
+
          var result = corpusXmlList;
          var blob = new Blob([result[0].content], {type: "text/plain;charset=utf-8"});
+         console.log(result[0].content)
+         console.log((new DOMParser).parseFromString(result[0].content, 'application/xml'))
          var dateStr = (new Date()).yyyymmdd();
          var filename = dateStr + '-' + result[0].name + '.html';     // after merging, result[0].name will be the valud in element id="corpus"
          saveAs(blob, filename);             // requires FileSaver.js

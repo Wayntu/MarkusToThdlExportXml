@@ -378,7 +378,7 @@ var MarkusToSTAMLFuncs = (function(){
       }
 		var tag = '<span class="' ;
 		var tagName, moreThanOneIdData, moreThanOneIdAttribute;
-		if( object.type === "person" ){
+		if( object.type === "PersonName" ){
 			if( object.subtype === "othername" ){
 				tagName = "partialName";
 				moreThanOneIdData = "linkdata";
@@ -392,15 +392,15 @@ var MarkusToSTAMLFuncs = (function(){
 			else {
 				tagName = "fullName";
 				moreThanOneIdData = "linkdata";
-				moreThanOneIdAttribute = "CbdbId";       // 2017-03-28: from "cbdbid" to "CbdbId"
+				moreThanOneIdAttribute = "cbdbId";       // 2017-03-28: from "cbdbid" to "CbdbId"
 			}
 		}
-		else if(object.type === "location"){
+		else if(object.type === "LocName"){
 			tagName = "placeName";
 			moreThanOneIdData = "userdata";
 			moreThanOneIdAttribute = "note";
 		}
-		else if(object.type === "datetime"){
+		else if(object.type === "Date"){
 			tagName = "timePeriod";
 			moreThanOneIdData = "userdata";
 			moreThanOneIdAttribute = "note";
@@ -414,6 +414,19 @@ var MarkusToSTAMLFuncs = (function(){
 			tagName = "recipe";
 			moreThanOneIdData = "userdata";
 			moreThanOneIdAttribute = "note";
+		}
+		// 2017/12/21: added the `office, comment, span` type
+		else if (object.type === "Office") {
+			tagName = "officialTitle"
+		}
+		else if (object.type === "Comment") {
+			tagName = "comment"
+		}
+		else if (object.type === "span") {
+			
+		} 
+		else if (object.type === "CommentItem") {
+			tagName = "commentitem"
 		}
 		else {
 		   // check if object.type is "Udef_xxx"...
@@ -556,6 +569,7 @@ var MarkusToSTAMLFuncs = (function(){
 		articleInformation: function( context ){      // get the "article" information from context (e.g., Markus html)
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
+			console.log(xmlDoc)
 			var metaHidden = xmlDoc.getElementById("metadataHidden");
 			if( metaHidden ) metaHidden.parentNode.removeChild( xmlDoc.getElementById("metadataHidden") );
 			var chapters = [];
@@ -613,7 +627,6 @@ var MarkusToSTAMLFuncs = (function(){
 
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString( "<div class='doc'><pre></pre></div>" ,"text/xml");
-
 			// metadata
 			var rootNode = xmlDoc.evaluate("/div[@class='doc']", xmlDoc, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null).iterateNext();
 
@@ -643,12 +656,12 @@ var MarkusToSTAMLFuncs = (function(){
 				}
 			}
 
+
 			var metadataNode = xmlDoc.createElement("div");
 			metadataNode.setAttribute("id", "metadataHidden");
 			metadataNode.setAttribute("style", "display: none");
-			//console.log(metadata);
 			appendAllChildren( objectToXML(metadata), metadataNode );
-			xmlDoc.getElementById("passage0").appendChild( metadataNode );
+			//xmlDoc.getElementById("passage0").appendChild( metadataNode );
 
 			return (new XMLSerializer()).serializeToString(xmlDoc) ;
 		}

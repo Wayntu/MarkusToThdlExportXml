@@ -7,7 +7,7 @@ var STAMLTransformer = (function(){
 	}
 
 	STAMLTransformer.prototype.transform = function(context) {
-      // ­YÂà´«¦¨ STAML ³~¤¤¦³¿ùº|¡A´N«Ü¥i¯à¬O¦]¬°¥H¤Uªº merge() ¨S³B²z¦n            
+      // ï¿½Yï¿½à´«ï¿½ï¿½ STAML ï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½|ï¿½Aï¿½Nï¿½Ü¥iï¿½ï¿½Oï¿½]ï¿½ï¿½ï¿½Hï¿½Uï¿½ï¿½ merge() ï¿½Sï¿½Bï¿½zï¿½n            
 		return this.merge( this.documentInformation(context),
                          this.articleInformation(context) );
 		/* return this.merge( this.metadataTransformer(context),
@@ -21,9 +21,10 @@ var STAMLTransformer = (function(){
 	STAMLTransformer.prototype.transformBack = function(STAMLcontext){
 		//console.log(this);
       //alert('transformBack1: ' + JSON.stringify(STAMLcontext));
-      var contextObj = this.unmerge(STAMLcontext);
+		var contextObj = this.unmerge(STAMLcontext);
       //alert('transformBack2: ' + JSON.stringify(contextObj));     // 2017-04-07: allows content to be an array...
-		var result = this.mergeToContext(contextObj);                 // result: e.g., ThdlExportXml, MarkusHtml
+		var result = this.mergeToContext(contextObj);
+		                 // result: e.g., ThdlExportXml, MarkusHtml
       //alert('transformBack3: ' + JSON.stringify(result));
       return result;
 	}
