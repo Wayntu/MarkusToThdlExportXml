@@ -23,15 +23,16 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
    // 2017-01-19: tagTable �O�B�z�u�q ThdlExportXml �ഫ�� object model�v�һݪ����F
    //             ���q object model ��X�� ThdlExportXml�A�����I�s generateTag()!
 	var tagTable = [
-		{ type: "person", xpath: "//PersonName" },
-		{ type: "location", xpath: "//LocName" },
+		{ type: "PersonName", xpath: "//PersonName" },
+		{ type: "LocName", xpath: "//LocName" },
     { type: "datetime", xpath: "//Date"},
     { type: "thing", subtype: "specific", xpath: "//SpecificTerm"},
-      //{ type: "drugname", xpath: "//DrugName"},
-      //{ type: "recipe", xpath: "//Recipe"},
-      //{ type: "udef_h", xpath: "//Udef_h"},
-	];
-  var tagTable = []
+    { type: "drugname", xpath: "//DrugName"},
+    { type: "recipe", xpath: "//Recipe"},
+    { type: "udef_h", xpath: "//Udef_h"},
+  ];
+
+  var tagTable = [];
 	var tagIgnore = [];
   
   var XMLtoObject = function(xmlNode){
@@ -81,7 +82,7 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
       //{ type: "Udef_h", xpath: "//Udef_h"},
 	   var tagHash = {};
 	   for (var i=0; i<tagTable.length; i++) {
-	      //tagHash[tagTable[i].type] = 1;
+	      tagHash[tagTable[i].type] = 1;
 	   }
 
       for (var i=0; i<customizedTags.length; i++) {           // �N Markus html �� <span type="xxx"> �ন <Udef_xxx> 
@@ -106,32 +107,37 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
 
-      var nodes = xmlDoc.firstChild.childNodes;
+      const nodes = xmlDoc.firstChild.childNodes;
+      // 2018/01/19 begining transformation
+      for (let i in nodes) {
 
-      for( var i = 0 ; i < nodes.length ; i++ ){
-				if( nodes[i].nodeType === 3 && nodes[i].nodeValue.trim().replace(/^\s+|\s+$/g, '') !== "" ){
+        let node = nodes[i]
+        if( nodes[i].nodeType == 3 && nodes[i].nodeValue.trim().replace(/^\s+|\s+$/g, '') !== "" ) {
+          // pure text
           content.push( nodes[i].nodeValue );
-				}
-				else if( nodes[i].nodeType === 1 ){
-					var node = createXMLDocumentFromNode(nodes[i]);
-          var ignore = false;
-					for( var j = 0 ; j < tagIgnore.length ; j++ ){
+				} else if (node.nodeType == 1) {
+          node = createXMLDocumentFromNode(node)
+          let ignore = false;
+          
+          // filter the tag
+          for (let j in tagIgnore) {
 						if( node.evaluate(tagIgnore[j], node, null, XPathResult.ANY_TYPE, null).iterateNext() ){
 							ignore = true;
 							break;
 						}
-					}
-					if( !ignore ) content.push( recursiveXML(node) );
-				}
+          }
+          if(!ignore) content.push(recursiveXML(node))
+        } else {
+          //console.log(node)
+        }
       }
 			return content;
 		}
-    
     var recursiveXML = function( node ){
 		var content = {};
 		var last = content;
 		var now = content;
-      //alert(JSON.stringify(tagTable));
+    
 		for( var i = 0 ; i < tagTable.length ; i++ ){
 		   // document.evaluate( xpathExpression, contextNode, namespaceResolver, resultType, result );
       var tags = node.evaluate( tagTable[i].xpath, node, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );
@@ -154,18 +160,27 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 						now.linkdata = undefined;
 						delete now.linkdata;
 					}
-				}
-      
-				last = now;
-				now.content = {};
-				now = now.content;
-			}
-		}
+        }
+        //2018-01-24
+        let attributes = tag.attributes;
+        for (let i = 0; i < attributes.length; i++) {
+          let name = attributes[i].name
+          let value = attributes[i].value
+          now[name] = value
+        }
 
-		last.content = node.firstChild.textContent;
+
+
+				last = now;
+				//now.content = {};
+        //now = now.content;
+        now = {}
+			}
+    }
     
-    
-    // return content; ????????????
+    last.content = node.firstChild.textContent;
+
+    // return content
     return last
 	}
   
@@ -288,23 +303,23 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
   
   
   return {
+    // document level meta-data extraction
     documentInformation: function(context){
-       var dom = tryParseXML(context);             // 2016-09-16
-		 if (dom === null) return null;
+      var dom = tryParseXML(context);             // 2016-09-16
+		  if (dom === null) return null;
 
-    //console.log(dom)
-    var metadata = {};
-    var parser = new DOMParser();
-		var xmlDoc = parser.parseFromString(context, "text/xml");
-    
-		// Tu 2017-02-08: should I append customized tags here? (will it be invoked several times?)
-    var descendentNodes = xmlDoc.getElementsByTagName("*");
-
-		var customizedTags = [];
-		for (var i=0; i<descendentNodes.length; i++) {
-		   customizedTags.push(descendentNodes[i].tagName);
-		}
-		appendCustomizedTags(customizedTags);     // append Udef_xxx tags to tagTable
+      var metadata = {};
+      var parser = new DOMParser();
+      var xmlDoc = parser.parseFromString(context, "text/xml");
+      
+      // Tu 2017-02-08: should I append customized tags here? (will it be invoked several times?)
+      var descendentNodes = xmlDoc.getElementsByTagName("*");
+      var customizedTags = [];
+      for (var i=0; i<descendentNodes.length; i++) {
+        customizedTags.push(descendentNodes[i].tagName);
+      }
+      appendCustomizedTags(customizedTags);     // append Udef_xxx tags to tagTable
+      
       
       var doc = xmlDoc.getElementsByTagName("document")[0];
       var childNodes = doc.childNodes;
@@ -318,7 +333,6 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
       for( var i = 0 ; i < attr.length ; ++i ){
         metadata[attr[i].nodeName] = attr[i].nodeValue;
       }
-      
       return {
         metadata: metadata
       };
@@ -327,10 +341,9 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
     articleInformation: function( context ){
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
-
 			var chapters = [];
 			if( sectionDividerTable.chapter ){
-				var nodes = xmlDoc.evaluate(sectionDividerTable.chapter, xmlDoc, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+        var nodes = xmlDoc.evaluate(sectionDividerTable.chapter, xmlDoc, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
         var node;
 				while( node = nodes.iterateNext() ){
 					chapters.push( {type: "chapter", content: createXMLDocumentFromNode(node)} );

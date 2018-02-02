@@ -74,6 +74,14 @@
             }
          }
          return contents;
+      }, "MARKUS": function(data){
+        const xmlDoc = tryParseXML(data[0].content)
+        const passage = $('.passage');
+        console.log(passage)
+        let contents = [];
+        
+
+        return contents;
       }};
       
       var merge = {
@@ -146,7 +154,7 @@
       var transfer = function(inputFormat, outputFormat, contents){
          if( split[inputFormat] ){        // split contents to a new array [{name,content}, {name,content}, ...]
            contents = split[inputFormat](contents);
-         }
+          }
          var inputTransformer = ((inputFormat !== "STAML")? new STAMLTransformer(funcs[inputFormat]) : funcs[inputFormat] );
          var outputTransformer = ((outputFormat !== "STAML")? new STAMLTransformer(funcs[outputFormat]) : funcs[outputFormat] );
          var result = contents.map( function(data, idx) {
@@ -160,7 +168,7 @@
                content: staml
             }; 
          });
-        
+        var xmlDoc = tryParseXML(result[0].content)
          result = result.map( function(data){ 
             interruptForAnimation(false);
             var extra = null;

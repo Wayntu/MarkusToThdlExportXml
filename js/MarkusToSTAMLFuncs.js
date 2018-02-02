@@ -45,7 +45,7 @@ var MarkusToSTAMLFuncs = (function(){
 	var tagIgnore = [
 		//"/span[@class='commentContainer']"
 	];
-
+    
 	var XMLTableToJSON  = function( table ){    // [{from:xpath, to:'note'}]
       //alert(JSON.stringify(table));
 		return function(context){
@@ -367,15 +367,28 @@ var MarkusToSTAMLFuncs = (function(){
 		return object;
 	}
 
+
 	var generateTag = function( object ) {
 		if (String.isString(object)) return object;
-      if (Array.isArray(object)) {           // 2017-11-26
+        if (Array.isArray(object)) {           // 2017-11-26
          var s = object.map(function(e) {
             return generateTag(e);
          });
          //return "<span class='unknown'>" + s + "</span>";
          return s;
-      }
+	  }
+	    // var XmlMappedToMarkus = {
+		// 	Category: '',
+		// 	Term: '',
+		// 	CbdbId: '',
+
+		// }
+		// Markus	|	DocuXML
+		// 姓名: fullname			| PersonName 
+		// 別名: partialname		| PersonName + othername
+		// 時間: timePeriod		| Date
+		// 地名: placeName		| LocName
+		// 官名: officialTitle	| Office
 		var tag = '<span class="' ;
 		var tagName, moreThanOneIdData, moreThanOneIdAttribute;
 		if( object.type === "PersonName" ){
@@ -392,13 +405,13 @@ var MarkusToSTAMLFuncs = (function(){
 			else {
 				tagName = "fullName";
 				moreThanOneIdData = "linkdata";
-				moreThanOneIdAttribute = "cbdbId";       // 2017-03-28: from "cbdbid" to "CbdbId"
+				moreThanOneIdAttribute = "CbdbId";       // 2017-03-28: from "cbdbid" to "CbdbId"
 			}
 		}
 		else if(object.type === "LocName"){
 			tagName = "placeName";
-			moreThanOneIdData = "userdata";
-			moreThanOneIdAttribute = "note";
+			moreThanOneIdData = "linkdata";
+			moreThanOneIdAttribute = "placename_id";
 		}
 		else if(object.type === "Date"){
 			tagName = "timePeriod";
@@ -415,19 +428,13 @@ var MarkusToSTAMLFuncs = (function(){
 			moreThanOneIdData = "userdata";
 			moreThanOneIdAttribute = "note";
 		}
-		// 2017/12/21: added the `office, comment, span` type
+		// 2017/12/21: added the office, span type
 		else if (object.type === "Office") {
 			tagName = "officialTitle"
 		}
-		else if (object.type === "Comment") {
-			tagName = "comment"
-		}
 		else if (object.type === "span") {
-			
+			//console.log(object)
 		} 
-		else if (object.type === "CommentItem") {
-			tagName = "commentitem"
-		}
 		else {
 		   // check if object.type is "Udef_xxx"...
 		   var s = object.type;
@@ -450,29 +457,41 @@ var MarkusToSTAMLFuncs = (function(){
 			tag += " moreThanOneId";
 		}
 		tag += '" type="' + tagName + '"';
-		if( object.linkdata ){
-			for( var key in object.linkdata ){
-				if( key === "refID" ){
-					continue;
-				}
-				tag += " " + key + '="' + object.linkdata[key] + '"';
+		// if( object.linkdata ){
+		// 	for( var key in object.linkdata ){
+		// 		if( key === "refID" ){
+		// 			continue;
+		// 		}
+		// 		tag += " " + key + '="' + object.linkdata[key] + '"';
+		// 	}
+		// }
+
+		// if( object.userdata ){
+		// 	for( var key in object.userdata ){
+		// 		if( key === "note" ){
+		// 			tag += " " + tagName.toLowerCase() + '_id="' + object.userdata[key] + '"'
+		// 		}
+		// 		else if( key === "refID" ){
+		// 			continue;
+		// 		}
+		// 		else {
+		// 			tag += " " + key + '="' + object.userdata[key] + '"';
+		// 		}
+		// 	}
+		// }
+		for (var key in object) {
+			if (key === 'type' && key == 'Type') {
+				continue
+			} else if (key === 'CbdbId') {
+				tag += ' cbdbid' + '="' + object[key] + '"'
+			} else if (key === 'Term') {
+				continue
+			} else if (key ==='Category') {
+				continue
+			} else if (key ==='refId') {
+				tag += ' placename_id' + '="' + object[key] + '"'
 			}
 		}
-
-		if( object.userdata ){
-			for( var key in object.userdata ){
-				if( key === "note" ){
-					tag += " " + tagName.toLowerCase() + '_id="' + object.userdata[key] + '"'
-				}
-				else if( key === "refID" ){
-					continue;
-				}
-				else {
-					tag += " " + key + '="' + object.userdata[key] + '"';
-				}
-			}
-		}
-
 		tag += ">";
 		//console.log( tag );
 
@@ -545,7 +564,7 @@ var MarkusToSTAMLFuncs = (function(){
 			var dom = tryParseXML(context);             // 2016-09-16
 			if (dom === null) return null;
 
-			metaHidden = (dom) ? dom.getElementById("metadataHidden") : null;
+			metaHidden = (dom) ? dom.getElementById("metadataHidden") : null; // 2018-0201
 			//var metaHidden = (new DOMParser()).parseFromString(context, "text/xml").getElementById("metadataHidden");
 
 			// Tu: 2017-01-19 firstChild <div ... tag="...">
@@ -569,7 +588,6 @@ var MarkusToSTAMLFuncs = (function(){
 		articleInformation: function( context ){      // get the "article" information from context (e.g., Markus html)
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
-			console.log(xmlDoc)
 			var metaHidden = xmlDoc.getElementById("metadataHidden");
 			if( metaHidden ) metaHidden.parentNode.removeChild( xmlDoc.getElementById("metadataHidden") );
 			var chapters = [];
@@ -626,7 +644,7 @@ var MarkusToSTAMLFuncs = (function(){
 			var application = input.document.application;
 
 			var parser = new DOMParser();
-			var xmlDoc = parser.parseFromString( "<div class='doc'><pre></pre></div>" ,"text/xml");
+			var xmlDoc = parser.parseFromString( "<div class='doc'><pre contenteditable='false'></pre></div>" ,"text/xml");
 			// metadata
 			var rootNode = xmlDoc.evaluate("/div[@class='doc']", xmlDoc, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null).iterateNext();
 
@@ -645,14 +663,39 @@ var MarkusToSTAMLFuncs = (function(){
 
 			// sections
 			var sectionNumber = 0;
-			for( var i = 0 ; i < sections.length ; i++ ){
-				for( var j = 0 ; j < sections[i].content.length ; j++, sectionNumber++ ){
-					var section = '<span class="passage" type="passage" id="passage' + sectionNumber + '"><span class="commentContainer" value="[]"><span class="glyphicon glyphicon-comment" type="commentIcon" style="display:none" aria-hidden="true" data-markus-passageid="passage' + sectionNumber + '"></span></span>';
-					for( var k = 0 ; k < sections[i].content[j].content.length ; k++ ){
-						section += generateTag( sections[i].content[j].content[k] );
+			for( var i = 0 ; i < sections.length ; i++ ) {
+
+				let chapter = sections[i];
+				for( var j = 0 ; j < chapter.content.length ; j++, sectionNumber++ ){ 
+					let section = chapter.content[j]
+
+					// comment
+					let firstContent = section.content[0]
+					let comment = ''
+					let k = 0
+					if (firstContent.type === 'CommentItem') {
+						k = 1
+						comment += '&quot;'
+						for (let t in firstContent.content) {
+							let word = firstContent.content.charCodeAt(t)
+							if (word > 127) {
+								comment += '&amp;#(' + word + ');'
+							} else if (word == 34 || word == 39) {	// parse ' and " 
+								comment += '\\&quot;'
+							} else if (word == 10) {	// filter useless
+								continue
+							} else {
+								comment += firstContent.content[t]
+							}
+						}
+						comment += '&quot;'
+					} 
+					var context = '<span class="passage" type="passage" id="passage' + sectionNumber + '"><span class="commentContainer" value="[' + comment +']"><span class="glyphicon glyphicon-comment" type="commentIcon" style="" aria-hidden="true" data-markus-passageid="passage' + sectionNumber + '">\n</span></span>';
+					for( k ; k < section.content.length ; k++ ){
+						context += generateTag( section.content[k] );
 					}
-					section += "</span>\n\n";
-					appendAllChildren( section, xmlDoc.getElementsByTagName("div")[0].getElementsByTagName("pre")[0] );
+					context += "</span>\n\n";
+					appendAllChildren( context, xmlDoc.getElementsByTagName("div")[0].getElementsByTagName("pre")[0] );
 				}
 			}
 
@@ -661,8 +704,7 @@ var MarkusToSTAMLFuncs = (function(){
 			metadataNode.setAttribute("id", "metadataHidden");
 			metadataNode.setAttribute("style", "display: none");
 			appendAllChildren( objectToXML(metadata), metadataNode );
-			//xmlDoc.getElementById("passage0").appendChild( metadataNode );
-
+			xmlDoc.getElementById("passage0").appendChild( metadataNode );
 			return (new XMLSerializer()).serializeToString(xmlDoc) ;
 		}
 	};
