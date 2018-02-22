@@ -112,7 +112,7 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
       for (let i in nodes) {
 
         let node = nodes[i]
-        if( nodes[i].nodeType == 3 && nodes[i].nodeValue.trim().replace(/^\s+|\s+$/g, '') !== "" ) {
+        if( node.nodeType == 3 && node.nodeValue.trim().replace(/^\s+|\s+$/g, '') !== "" ) {
           // pure text
           content.push( nodes[i].nodeValue );
 				} else if (node.nodeType == 1) {
@@ -134,15 +134,23 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 			return content;
 		}
     var recursiveXML = function( node ){
+      for (var i in node) {
+        console.log(i)
+      }
+    
 		var content = {};
 		var last = content;
 		var now = content;
-    
 		for( var i = 0 ; i < tagTable.length ; i++ ){
 		   // document.evaluate( xpathExpression, contextNode, namespaceResolver, resultType, result );
       var tags = node.evaluate( tagTable[i].xpath, node, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );
       var tag;
-			while( tag = tags.iterateNext() ){
+      let j = 0
+			while( tag = tags.iterateNext() ){ 
+        
+        console.log(node.attributes)
+        console.log(typeof(node))
+        //console.log(tag)
 				now.type = tagTable[i].type;
 				if( tagTable[i].subtype ){
 					now.subtype = tagTable[i].subtype;
@@ -172,14 +180,13 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 
 
 				last = now;
-				//now.content = {};
-        //now = now.content;
+				now.content = {};
+        now = now.content;
         now = {}
 			}
     }
     
     last.content = node.firstChild.textContent;
-
     // return content
     return last
 	}
@@ -379,6 +386,7 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
           } while ( node = nodes.iterateNext() );
         }
       }
+      console.log(sections)
 			return sections;
 		},
       

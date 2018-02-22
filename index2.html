@@ -9,6 +9,7 @@
       <script src="js/PlainTextToSTAMLFuncs.js"></script>
       <script src="js/ThdlExportXMLToSTAMLFuncs.js"></script>
       <script src="js/FileSaver.min.js"></script>
+      <script src="js/jszip.min.js"></script>
    <script>
       var inputFormat = 'THDLExportXML';
       var outputFormat = 'MARKUS';
@@ -158,7 +159,8 @@
             } 
           })
          if( merge[outputFormat] ){
-           result = merge[outputFormat](result, true);
+           //2018-02-05 merge可能會犧牲metadata
+           //result = merge[outputFormat](result, true);
          }     
          return result;
       }
@@ -207,13 +209,18 @@
          //var result = merge[outputFormat](corpusXmlList, false);     // don't replace corpus
 
          var result = corpusXmlList;
-         for (let i in result) {  
-           console.log(result[i])         
-           var blob = new Blob([result[i].content], {type: "text/plain;charset=utf-8"});
+         var zip = new JSZip();
+         for (let i in result) {         
+           //var blob = new Blob([result[i].content], {type: "text/plain;charset=utf-8"});
            var dateStr = (new Date()).yyyymmdd();
            var filename = dateStr + '-' + result[i].name + '.html';     // after merging, result[0].name will be the valud in element id="corpus"
-           saveAs(blob, filename);             // requires FileSaver.js
-         }
+           zip.file(filename, result[i].content)
+          }
+         const name = result[0].name
+         zip.generateAsync({type:'blob'})
+          .then(function(content) {
+            saveAs(content, name.substring(0, name.length -3))       // requires FileSaver.js
+          })
       });
 
    });      
