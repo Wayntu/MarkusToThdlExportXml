@@ -101,16 +101,32 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 	   //alert(JSON.stringify(tagTable));
 	}
 
-  
+  function flattenRecursiveNode( nodes ){
+    result = []
+    for ( let i in nodes ){
+      let node = nodes[i]
+      if ( node.nodeName === 'MarkusDiv' ){
+        node.childNodes.forEach( (currentValue, currentIndex, listObj) => {
+          result.push(currentValue)
+        })
+        for (let j in node.childNodes) {
+          result.push(node.childNodes[j])
+        }
+      } else result.push(node)
+    }
+    return result
+  } 
+
   var tagTransformer = function( context ){
 			var content = [];
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
 
-      const nodes = xmlDoc.firstChild.childNodes;
+
+      // only for markusdiv tag
+      const nodes = flattenRecursiveNode(xmlDoc.firstChild.childNodes);
       // 2018/01/19 begining transformation
       for (let i in nodes) {
-
         let node = nodes[i]
         if( node.nodeType == 3 && node.nodeValue.trim().replace(/^\s+|\s+$/g, '') !== "" ) {
           // pure text
@@ -126,7 +142,9 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 							break;
 						}
           }
-          if(!ignore) content.push(recursiveXML(node))
+          if(!ignore) {
+            content.push(recursiveXML(node))
+          }
         } else {
           //console.log(node)
         }
