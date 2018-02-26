@@ -45,8 +45,16 @@
               for( var j = 0 ; j < documents.length ; ++j ){
                 var newXML = (new DOMParser()).parseFromString("<ThdlPrototypeExport><documents></documents></ThdlPrototypeExport>", "text/xml");
                 appendAllChildren( (new XMLSerializer()).serializeToString(documents[j]), newXML.getElementsByTagName("documents")[0]);
+                // document number
+                let temp = {
+                  1: '000',
+                  2: '00',
+                  3: '0',
+                  4: ''
+                }
+                let documentNumber = temp[j.toString().length]  + j.toString()
                 contents.push({
-                    name: data[i].name + "(" + j + ")", // Filename: originalFilename(j)
+                    name: data[i].name + "(" + documentNumber + ")", // Filename: originalFilename(j)
                     content: (new XMLSerializer()).serializeToString(newXML)
                 });
               }
@@ -161,7 +169,7 @@
          if( merge[outputFormat] ){
            //2018-02-05 merge可能會犧牲metadata
            //result = merge[outputFormat](result, true);
-         }     
+         } 
          return result;
       }
       

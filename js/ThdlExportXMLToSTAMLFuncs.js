@@ -109,9 +109,6 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
         node.childNodes.forEach( (currentValue, currentIndex, listObj) => {
           result.push(currentValue)
         })
-        for (let j in node.childNodes) {
-          result.push(node.childNodes[j])
-        }
       } else result.push(node)
     }
     return result
@@ -152,9 +149,6 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 			return content;
 		}
     var recursiveXML = function( node ){
-      for (var i in node) {
-        console.log(i)
-      }
     
 		var content = {};
 		var last = content;
@@ -166,9 +160,6 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
       let j = 0
 			while( tag = tags.iterateNext() ){ 
         
-        console.log(node.attributes)
-        console.log(typeof(node))
-        //console.log(tag)
 				now.type = tagTable[i].type;
 				if( tagTable[i].subtype ){
 					now.subtype = tagTable[i].subtype;
@@ -404,7 +395,6 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
           } while ( node = nodes.iterateNext() );
         }
       }
-      console.log(sections)
 			return sections;
 		},
       

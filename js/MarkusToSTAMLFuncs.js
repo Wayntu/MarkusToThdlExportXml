@@ -670,7 +670,7 @@ var MarkusToSTAMLFuncs = (function(){
 					let section = chapter.content[j]
 
 					// comment
-					let firstContent = section.content[0]
+				 	const firstContent = section.content[0]
 					let comment = ''
 					let k = 0
 					if (firstContent.type === 'CommentItem') {
@@ -698,8 +698,6 @@ var MarkusToSTAMLFuncs = (function(){
 					appendAllChildren( context, xmlDoc.getElementsByTagName("div")[0].getElementsByTagName("pre")[0] );
 				}
 			}
-
-
 			var metadataNode = xmlDoc.createElement("div");
 			metadataNode.setAttribute("id", "metadataHidden");
 			metadataNode.setAttribute("style", "display: none");

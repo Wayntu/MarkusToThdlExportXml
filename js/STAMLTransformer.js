@@ -23,7 +23,7 @@ var STAMLTransformer = (function(){
       //alert('transformBack1: ' + JSON.stringify(STAMLcontext));
 		var contextObj = this.unmerge(STAMLcontext);
       //alert('transformBack2: ' + JSON.stringify(contextObj));     // 2017-04-07: allows content to be an array...
-	 	var result = this.mergeToContext(contextObj);
+		var result = this.mergeToContext(contextObj);
 		                 // result: e.g., ThdlExportXml, MarkusHtml
       //alert('transformBack3: ' + JSON.stringify(result));
       return result;
