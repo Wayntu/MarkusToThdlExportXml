@@ -676,20 +676,18 @@ var MarkusToSTAMLFuncs = (function(){
 					if (firstContent.type === 'CommentItem') {
 						k = 1
 						comment += '&quot;'
-						for (let t in firstContent.content) {
+						for (let t = 0; t < firstContent.content.length; t++) {
 							let word = firstContent.content.charCodeAt(t)
 							if (word > 127) {
 								comment += '&amp;#(' + word + ');'
 							} else if (word == 34 || word == 39) {	// parse ' and " 
 								comment += '\\&quot;'
-							} else if (word == 10) {	// filter useless
-								continue
 							} else {
 								comment += firstContent.content[t]
 							}
 						}
 						comment += '&quot;'
-					} 
+					}
 					var context = '<span class="passage" type="passage" id="passage' + sectionNumber + '"><span class="commentContainer" value="[' + comment +']"><span class="glyphicon glyphicon-comment" type="commentIcon" style="" aria-hidden="true" data-markus-passageid="passage' + sectionNumber + '">\n</span></span>';
 					for( k ; k < section.content.length ; k++ ){
 						context += generateTag( section.content[k] );
