@@ -43,18 +43,24 @@
         
               var documents = xmlDoc.getElementsByTagName("document");
               for( var j = 0 ; j < documents.length ; ++j ){
-                var newXML = (new DOMParser()).parseFromString("<ThdlPrototypeExport><documents></documents></ThdlPrototypeExport>", "text/xml");
+                const newXML = (new DOMParser()).parseFromString("<ThdlPrototypeExport><documents></documents></ThdlPrototypeExport>", "text/xml");
                 appendAllChildren( (new XMLSerializer()).serializeToString(documents[j]), newXML.getElementsByTagName("documents")[0]);
-                // document number
-                let temp = {
-                  1: '000',
-                  2: '00',
-                  3: '0',
-                  4: ''
+                let filename = ''
+                if (newXML.firstChild.firstChild.firstChild.attributes['filename'] != 'undefined') {
+                  filename = newXML.firstChild.firstChild.firstChild.attributes['filename'].nodeValue
+                } else {
+                  // document number
+                  const temp = {
+                    1: '000',
+                    2: '00',
+                    3: '0',
+                    4: ''
+                  }
+                  const documentNumber = temp[j.toString().length]  + j.toString()
+                  filename = data[i].name + "(" + documentNumber + ")"
                 }
-                let documentNumber = temp[j.toString().length]  + j.toString()
                 contents.push({
-                    name: data[i].name + "(" + documentNumber + ")", // Filename: originalFilename(j)
+                    name: filename, // Filename: originalFilename(j)
                     content: (new XMLSerializer()).serializeToString(newXML)
                 });
               }

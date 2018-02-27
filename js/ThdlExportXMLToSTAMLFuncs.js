@@ -100,17 +100,33 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 
 	   //alert(JSON.stringify(tagTable));
 	}
+  function isRecursiveNode( node ){
+    const childNodes = node.childNodes
+    const firstChild = node.firstChild
 
+    if (firstChild == null) return false
+    if (childNodes.length > 1) {
+      return true
+    } else if (firstChild.nodeName !== '#text') {
+      return true
+    } else if (node.nodeName === 'MarkusDiv') {
+      return true
+    } else {
+      return false
+    }
+  }
   function flattenRecursiveNode( nodes ){
-    result = []
-    for ( let i in nodes ){
-      let node = nodes[i]
-      if ( node.nodeName === 'MarkusDiv' ){
-        node.childNodes.forEach( (currentValue, currentIndex, listObj) => {
+    const result = []
+    nodes.forEach( function(currentValue){
+      if ( isRecursiveNode(currentValue) ){
+        const recursiveNode = flattenRecursiveNode(currentValue.childNodes)
+        recursiveNode.forEach(function(currentValue) {
           result.push(currentValue)
         })
-      } else result.push(node)
-    }
+      } else {
+        result.push(currentValue)
+      }
+    })
     return result
   } 
 
@@ -118,10 +134,8 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 			var content = [];
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
-
-
-      // only for markusdiv tag
       const nodes = flattenRecursiveNode(xmlDoc.firstChild.childNodes);
+
       // 2018/01/19 begining transformation
       for (let i in nodes) {
         let node = nodes[i]
