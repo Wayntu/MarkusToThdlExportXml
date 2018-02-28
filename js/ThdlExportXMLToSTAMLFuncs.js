@@ -87,7 +87,7 @@ var ThdlExportXMLToSTAMLFuncs = (function(){
 
       for (var i=0; i<customizedTags.length; i++) {           // �N Markus html �� <span type="xxx"> �ন <Udef_xxx> 
          var tag = customizedTags[i];
-	      if (tag.substr(0,5) !== 'Udef_' && !tagHash[tag]) {
+	      if (!tagHash[tag]) {
 	         var tagType = tag;          // �b ThdlExportXml �����ҦW�١A�� Udef_<tag>
 	         var xpath = "//" + tagType;
 	         var entry = { type: tagType,

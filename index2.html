@@ -14,7 +14,7 @@
       var inputFormat = 'THDLExportXML';
       var outputFormat = 'MARKUS';
       var corpusXmlList = [];       // Tu: add for output multiple corpuses
-
+      var application = {} // handle the user defined tag mainly
       function tryParseXML(xmlString) {
          try {
             var parser = new DOMParser();
@@ -107,10 +107,10 @@
           doc.appendChild(pre);
           // console.log(data)
           for (let i in data) {
-            let parser = new DOMParser();
-            let xmlDoc = parser.parseFromString(data[i].content, "text/xml");
-            let paragraph = xmlDoc.firstChild.firstChild.firstChild
-            let commentItem = paragraph.firstChild
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(data[i].content, "text/xml");
+            const paragraph = xmlDoc.firstChild.firstChild.firstChild
+            const commentItem = paragraph.firstChild
             paragraph.setAttribute('id', 'passage' + i)
             commentItem.setAttribute('data-markus-passageid', 'passage' + i)
             // console.log(paragraph)
@@ -151,14 +151,38 @@
       // input: THDLExportXML
       // output: MARKUS
       // process: split -> transform -> merge
+      const extractCorpusInformation = (contents) => {
+        const result = {}
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(contents[0].content, "text/xml");
+        const corpus = xmlDoc.firstChild.firstChild
+        corpus.childNodes.forEach(function(node) {
+          const nodeName = node.nodeName
+          if (nodeName === 'feature_analysis') {
+            const tags = node.childNodes
+            const tagList = []
+            tags.forEach(function(tag) {
+              if (tag.nodeName === 'tag') {
+                const name = tag.attributes.getNamedItem('name').value
+                if (name.substr(0, 5) === 'Udef_')
+                  tagList.push(name.substr(5))
+                else
+                  tagList.push(name)
+              }
+            })
+            result['tag'] = tagList
+          }
+        })
+        return result
+      }
       var transfer = function(inputFormat, outputFormat, contents){
+        application = extractCorpusInformation(contents)
          if( split[inputFormat] ){
            contents = split[inputFormat](contents);
 
          }
          var inputTransformer = ((inputFormat !== "STAML")? new STAMLTransformer(funcs[inputFormat]) : funcs[inputFormat] );
          var outputTransformer = ((outputFormat !== "STAML")? new STAMLTransformer(funcs[outputFormat]) : funcs[outputFormat] );
-         
          var result = contents.map( function(data) { 
 
             return {

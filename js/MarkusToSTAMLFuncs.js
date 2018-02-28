@@ -436,20 +436,20 @@ var MarkusToSTAMLFuncs = (function(){
 			//console.log(object)
 		} 
 		else {
-		   // check if object.type is "Udef_xxx"...
-		   var s = object.type;
-         if (typeof(s) === 'undefined') {
-            alert("Error in generateTag(): " + JSON.stringify(object));    // e.g., not an object but an array of objects: [{type,content}]
-         }
-		   var ret = '';
-		   if (s.substr(0,5) === 'Udef_') {
-            tagName = s.substr(5);
-	         moreThanOneIdData = "userdata";
-            moreThanOneIdAttribute = "note";
-		   }
-		   else {
-            return "<" + object.type + ((object.subtype)? " subtype = '" + object.subtype + "'": "")+ ">" +  object.content + "</" + object.type + ">";
-		   }
+			// check if object.type is "Udef_xxx"...
+			var s = object.type;
+			if (typeof(s) === 'undefined') {
+				alert("Error in generateTag(): " + JSON.stringify(object));    // e.g., not an object but an array of objects: [{type,content}]
+			}
+			var ret = '';
+			if (s.substr(0,5) === 'Udef_') {
+				tagName = s.substr(5);
+				moreThanOneIdData = "userdata";
+				moreThanOneIdAttribute = "note";
+			}
+			else {
+				return "<" + object.type + ((object.subtype)? " subtype = '" + object.subtype + "'": "")+ ">" +  object.content + "</" + object.type + ">";
+			}
 		}
 
 		tag += tagName + " markup unsolved";
@@ -503,7 +503,6 @@ var MarkusToSTAMLFuncs = (function(){
 		}
 
 		tag += "</span>"
-
 		return tag;
 	}
 	
@@ -640,8 +639,8 @@ var MarkusToSTAMLFuncs = (function(){
 
 		mergeToContext: function( input ){
 			var metadata = input.document.metadata;
+			//var application = input.document.application;
 			var sections = input.article;
-			var application = input.document.application;
 
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString( "<div class='doc'><pre contenteditable='false'></pre></div>" ,"text/xml");
@@ -655,12 +654,20 @@ var MarkusToSTAMLFuncs = (function(){
 			// application
 			if( application ){
 					if( application.tag ){
-						var tag = xmlDoc.createAttribute("tag");
-						tag.value = application.tag;
+						const tag = xmlDoc.createAttribute("tag");
+						let result = '{'
+						for (let i in application.tag) {
+							result += '"' + application.tag[i] + '":{'
+							result += '"buttonName":"' + application.tag[i] + '",'
+							result += '"visible":true,'
+							result += '"color":"#333399",'
+							result += '"status":""},'
+						}
+						result = result.substr(0, result.length-1) + '}'
+						tag.value = result
 						rootNode.setAttributeNode(tag);
 					}
 			}
-
 			// sections
 			var sectionNumber = 0;
 			for( var i = 0 ; i < sections.length ; i++ ) {
