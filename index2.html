@@ -173,6 +173,7 @@
             result['tag'] = tagList
           }
         })
+        result['name'] = contents[0].name
         return result
       }
       var transfer = function(inputFormat, outputFormat, contents){
@@ -254,10 +255,10 @@
            var filename = dateStr + '-' + result[i].name + '.html';     // after merging, result[0].name will be the valud in element id="corpus"
            zip.file(filename, result[i].content)
           }
-         const name = result[0].name
+          console.log(application)
          zip.generateAsync({type:'blob'})
           .then(function(content) {
-            saveAs(content, name.substring(0, name.length -3))       // requires FileSaver.js
+            saveAs(content, application['name'])       // requires FileSaver.js
           })
       });
 
