@@ -45,7 +45,7 @@ var MarkusToSTAMLFuncs = (function(){
 	var tagIgnore = [
 		//"/span[@class='commentContainer']"
 	];
-    
+
 	var XMLTableToJSON  = function( table ){    // [{from:xpath, to:'note'}]
       //alert(JSON.stringify(table));
 		return function(context){
@@ -73,11 +73,11 @@ var MarkusToSTAMLFuncs = (function(){
 				   		jsonData[table[i].to] = node.nodeValue;
 				   	}
 				   }
-               
+
 				   if( jsonData[table[i].to].length === 1 ){
 				   	jsonData[table[i].to] = jsonData[table[i].to][0];
 				   }
-               
+
 				   if( jsonData[table[i].to].length === 0 ){
 				   	delete jsonData[table[i].to];
 				   }
@@ -89,7 +89,7 @@ var MarkusToSTAMLFuncs = (function(){
 			return jsonData;
 		};
 	}
-	
+
 	var tagTransformer = function( context ){
 	   var content = [];
 		var parser = new DOMParser();
@@ -125,7 +125,7 @@ var MarkusToSTAMLFuncs = (function(){
       //alert(JSON.stringify(content));
 		return content;
    }
-   
+
    // �]����S�M�ҳ]�p����Ƽҫ������A�ѡA�o�������B�z�۷�����...
    var extraTagHandling = function(node, contentList) {
       var firstChild = node.firstChild;
@@ -138,7 +138,7 @@ var MarkusToSTAMLFuncs = (function(){
          var commentContent = firstChild.getAttribute("value");      // a JSON-format array
          var commentArray = JSON.parse(commentContent);
          if (!Array.isArray(commentArray)) return null;
-         
+
          var commentItems = commentArray.map(function(s) {
             s = s.replace(/&#\((x?[0-9]+)\);/g, "&#$1;");
             var lines = s.split("\n");
@@ -148,13 +148,13 @@ var MarkusToSTAMLFuncs = (function(){
                lines.shift();
             }
             return { type: 'commentItem', subtype: category, content: lines.join("\n") };
-         });   
+         });
 
          // ���ɡAcontentList �̫���G�|���Ť��e�� span??
          var myLast = contentList.pop();
          if (myLast.type === 'span' && myLast.content === '') ;       // skip this node content
          else contentList.push(myLast);
-         
+
          if (contentList.length == 0) contentList = commentItems;
          else contentList.unshift({type:'comment', content:commentItems});
          return { type:tagType, content:contentList };
@@ -192,12 +192,12 @@ var MarkusToSTAMLFuncs = (function(){
          now.content = contentList;
          return now;
       }
-     
-      return null;         
-   }
-      
 
-   // �S�M�b�o�̪��B�z�覡���G���ǰ��D... 
+      return null;
+   }
+
+
+   // �S�M�b�o�̪��B�z�覡���G���ǰ��D...
 	var recursiveXML = function( node ){
 		var content = {};
 		var last = content;
@@ -211,7 +211,7 @@ var MarkusToSTAMLFuncs = (function(){
 		//}
       var myNodes = node.getElementsByTagName("*");
       allTag = myNodes.length;
-      
+
       if (allTag > 1) {
          var firstChild = node.firstChild;
          var tagType = firstChild.tagName;     // �Ȯɥ��� tagName �@�� tagType...
@@ -226,10 +226,10 @@ var MarkusToSTAMLFuncs = (function(){
                contentList[i] = childNodes[i].textContent;
             }
          }
-         
+
          var ret = extraTagHandling(node, contentList);
          if (ret === null)  ret = { type: tagType, content: contentList };
- 
+
           //alert(JSON.stringify(ret));
          return ret;
       }
@@ -260,14 +260,14 @@ var MarkusToSTAMLFuncs = (function(){
 						delete now.linkdata;
 					}
 				}
-            
+
 				last = now;               // referece to the previous result
 				now.content = {};         // create a deeper sub-object
-				now = now.content;        // move object reference to deeper sub-object 
+				now = now.content;        // move object reference to deeper sub-object
 			}
 		}
       //alert(allTag + ' - Wrapup: ' + JSON.stringify(content));
-		
+
 		//console.log( content, allTag, foundTag );
 		if( allTag !== foundTag ){
 			var lastNode = null;
@@ -279,37 +279,37 @@ var MarkusToSTAMLFuncs = (function(){
 				for( var i = 0 ; i < tagTable.length ; i++ ){
 					var tags = node.evaluate( tagTable[i].tag, child, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );
 					var tag;
-					
+
 					while( tag = tags.iterateNext() ){
 						++nowFoundTag;
-					}		
+					}
 				}
-				
+
 				if( allTag - nowFoundTag !== diff ){
 					//console.log( lastNode );
 					now.type = lastNode.nodeName;
 					if( lastNode.getAttribute("subtype") ){
 						now.subtype = lastNode.getAttribute("subtype");
 					}
-					
+
 					diff = allTag - nowFoundTag;
-					
+
 					last = now;
 					now.content = {};
 					now = now.content;
-				}			
+				}
 				lastNode = child;
 				--allTag;
 			}
-			
+
 			if( diff > 0 ){
 				now.type = lastNode.nodeName;
 				if( lastNode.getAttribute("subtype") ){
 					now.subtype = lastNode.getAttribute("subtype");
 				}
-				
+
 				diff = allTag - nowFoundTag;
-				
+
 				last = now;
 				now.content = {};
 				now = now.content;
@@ -320,16 +320,16 @@ var MarkusToSTAMLFuncs = (function(){
       //alert('last: ' + node.firstChild.nodeType + ': ' + JSON.stringify(last.content));
 		return content;         // content and last reference to the same object!
 	}
-	
+
 	var XMLtoObject = function(xmlNode){
 		if( xmlNode.childNodes.length === 1 && xmlNode.firstChild.nodeType === 3 ){
 			return xmlNode.firstChild.nodeValue.escape();
 		}
-    
+
     if( xmlNode.nodeType === 3 ){
       return xmlNode.nodeValue;
     }
-		
+
 		var object = [];
     var isArray = false;
 		var childNodes = xmlNode.childNodes;
@@ -344,7 +344,7 @@ var MarkusToSTAMLFuncs = (function(){
         object.push(obj);
       }
 		}
-    
+
     var attr = xmlNode.attributes;
     for( var i = 0 ; i < attr.length ; ++i ){
       var obj = {};
@@ -354,7 +354,7 @@ var MarkusToSTAMLFuncs = (function(){
       obj[attr[i].nodeName] = attr[i].nodeValue;
       object.push(obj);
     }
-    
+
 		if( !isArray ){
       var realObj = {};
       for( var i = 0 ; i < object.length ; ++i ){
@@ -384,7 +384,7 @@ var MarkusToSTAMLFuncs = (function(){
 
 		// }
 		// Markus	|	DocuXML
-		// 姓名: fullname			| PersonName 
+		// 姓名: fullname			| PersonName
 		// 別名: partialname		| PersonName + othername
 		// 時間: timePeriod		| Date
 		// 地名: placeName		| LocName
@@ -434,7 +434,7 @@ var MarkusToSTAMLFuncs = (function(){
 		}
 		else if (object.type === "span") {
 			//console.log(object)
-		} 
+		}
 		else {
 			// check if object.type is "Udef_xxx"...
 			var s = object.type;
@@ -505,16 +505,16 @@ var MarkusToSTAMLFuncs = (function(){
 		tag += "</span>"
 		return tag;
 	}
-	
+
 	var objectToXML = function(object){
 		if( String.isString(object) ){
 			return object.escape();
 		}
-		
+
 		if( Array.isArray(object) ){
 			return object.map(objectToXML).join("");
 		}
-		
+
 		var xmlString = "";
 		for( var key in object ){
 			if( key === "#text" ) continue;
@@ -522,9 +522,9 @@ var MarkusToSTAMLFuncs = (function(){
 		}
 		return xmlString;
 	}
-	
+
 	function appendCustomizedTags(customizedTags) {        // Tu
-		//{ type: "recipe",  
+		//{ type: "recipe",
 		//  tag: "//span[@type='Recipe']",
 		//  userdata: [ { from: "/span/@recipe_id", to: "note"} ]}
 	   var tagHash = {};
@@ -535,12 +535,12 @@ var MarkusToSTAMLFuncs = (function(){
 	      var regex = /\/\/span\[@type='(.+)'\]/g;
          var matches = regex.exec(tagPath);
          if (matches === null) continue;          // 2017-06-08: skip if no matches found
-         else {               
+         else {
 	         var tag = matches[1];
 	         tagHash[tag] = 1;
          }
 	   }
-	   for (var tag in customizedTags) {           // �N Markus html �� <span type="xxx"> �ন <Udef_xxx> 
+	   for (var tag in customizedTags) {           // �N Markus html �� <span type="xxx"> �ন <Udef_xxx>
 	      if (!tagHash[tag]) {
 	         var tagType = 'Udef_' + tag;          // �b ThdlExportXml �����ҦW�١A�� Udef_<tag>
 	         var tagPath = "//span[@type='" + tag + "']";
@@ -583,7 +583,6 @@ var MarkusToSTAMLFuncs = (function(){
 				application: applicationTransform(context),
 			};
 		},
-      
 		articleInformation: function( context ){      // get the "article" information from context (e.g., Markus html)
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
@@ -627,7 +626,7 @@ var MarkusToSTAMLFuncs = (function(){
                   // tagTransformer �u�B�z��e tag �]�Ҧp <span type="passage" id="...">�^���U�����e�A�]�� type, id �������ݩʡA�������e���o
                   var typeValId = node.firstChild.getAttribute("id");    // �p�G passage �S�� id �ݩʡA�N�|�O null
                   //alert(typeValId);
-                  var transformedContent = tagTransformer(nodeXml);    
+                  var transformedContent = tagTransformer(nodeXml);
 						sections[i].content.push({ type: "section", typeValId: typeValId, content: transformedContent });
 					}
 				} while( node = nodes.iterateNext() );
@@ -655,7 +654,7 @@ var MarkusToSTAMLFuncs = (function(){
 			if( application ){
 					if( application.tag ){
 						const tag = xmlDoc.createAttribute("tag");
-						let result = '{'
+						let result = '{ '
 						for (let i in application.tag) {
 							result += '"' + application.tag[i] + '":{'
 							result += '"buttonName":"' + application.tag[i] + '",'
@@ -673,7 +672,7 @@ var MarkusToSTAMLFuncs = (function(){
 			for( var i = 0 ; i < sections.length ; i++ ) {
 
 				let chapter = sections[i];
-				for( var j = 0 ; j < chapter.content.length ; j++, sectionNumber++ ){ 
+				for( var j = 0 ; j < chapter.content.length ; j++, sectionNumber++ ){
 					let section = chapter.content[j]
 
 					// comment
@@ -687,7 +686,7 @@ var MarkusToSTAMLFuncs = (function(){
 							let word = firstContent.content.charCodeAt(t)
 							if (word > 127) {
 								comment += '&amp;#(' + word + ');'
-							} else if (word == 34 || word == 39) {	// parse ' and " 
+							} else if (word == 34 || word == 39) {	// parse ' and "
 								comment += '\\&quot;'
 							} else {
 								comment += firstContent.content[t]
