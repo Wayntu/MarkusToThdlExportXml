@@ -29,8 +29,7 @@
             return null;
          }
       }
-      
-      var split = { 
+      var split = {
         // Format:
         // THDLExportXML
         "THDLExportXML": function(data) {
@@ -40,7 +39,7 @@
             //var xmlDoc = parser.parseFromString(data[i].content, "text/xml");
             var xmlDoc = tryParseXML(data[i].content);         // 2016-09-16
             if (xmlDoc === null) return null;
-        
+
               var documents = xmlDoc.getElementsByTagName("document");
               for( var j = 0 ; j < documents.length ; ++j ){
                 const newXML = (new DOMParser()).parseFromString("<ThdlPrototypeExport><documents></documents></ThdlPrototypeExport>", "text/xml");
@@ -67,7 +66,7 @@
           }
           return contents;
       }};
-      
+
       var merge = {
         // Format:
         // THDLExportXML
@@ -78,7 +77,7 @@
           for( var i = 0 ; i < data.length ; ++i ){
             var parser = new DOMParser();
             var xmlDoc = parser.parseFromString(data[i].content, "text/xml");
-      
+
             var documents = xmlDoc.getElementsByTagName("document");
             for( var j = 0 ; j < documents.length ; ++j ){
                if (isCorpusReplaced) {
@@ -90,12 +89,12 @@
                appendAllChildren( (new XMLSerializer()).serializeToString(documents[j]), newXML.getElementsByTagName("documents")[0]);
             }
           }
-      
+
           return [{
             name: document.getElementById("corpus").value,
             content: (new XMLSerializer()).serializeToString(newXML)
           }];
-        }, 
+        },
         "MARKUS": (data, isCorpusReplaced) => {
           if (isCorpusReplaced == undefined) isCorpusReplaced = true;
           var xmlDoc = document.implementation.createDocument(null, "div");
@@ -124,20 +123,20 @@
             name: name.substring(0, name.length - 3),
             content: (new XMLSerializer()).serializeToString(xmlDoc)
           }]
-        } 
+        }
 
       };
-      
+
       var funcs = { "text": PlainTextToSTAMLFuncs, "STAML": { transform: function(id){return id;}, transformBack: function(id){return id;}},
                     "MARKUS": MarkusToSTAMLFuncs, "THDLExportXML": ThdlExportXMLToSTAMLFuncs };
-      
+
       var subfilename = {
         "text": ".txt",
         "STAML": ".txt",
         "MARKUS": ".html",
         "THDLExportXML": ".xml"
       }
-      
+
       //var inputFormatChange = {
       //
       //};
@@ -147,7 +146,7 @@
       //    e.innerHTML = "<label for='corpus'>合併成Corpus: </label><input type='text' id='corpus' />";
       //  }
       //}
-      
+
       // input: THDLExportXML
       // output: MARKUS
       // process: split -> transform -> merge
@@ -173,6 +172,7 @@
             result['tag'] = tagList
           }
         })
+        result['name'] = contents[0].name
         return result
       }
       var transfer = function(inputFormat, outputFormat, contents){
@@ -183,37 +183,37 @@
          }
          var inputTransformer = ((inputFormat !== "STAML")? new STAMLTransformer(funcs[inputFormat]) : funcs[inputFormat] );
          var outputTransformer = ((outputFormat !== "STAML")? new STAMLTransformer(funcs[outputFormat]) : funcs[outputFormat] );
-         var result = contents.map( function(data) { 
+         var result = contents.map( function(data) {
 
             return {
               name: data.name,
               content: inputTransformer.transform(data.content)
             }
           })
-          .map(function(data) { 
+          .map(function(data) {
             return {
               name: data.name,
               content: outputTransformer.transformBack(data.content)
-            } 
+            }
           })
          if( merge[outputFormat] ){
            //2018-02-05 merge可能會犧牲metadata
            //result = merge[outputFormat](result, true);
-         } 
+         }
          return result;
       }
-      
+
       window.addEventListener("load", function() {
       document.getElementById("transfer").addEventListener("click", function(e){  // Begining Transfer
          var filesContent = [];
          var loadFinished = 0;
          [].map.call(document.getElementById("fileselect").files, function(f, index){
             var r = new FileReader();
-            r.onload = function(e) { 
-              
+            r.onload = function(e) {
+
       	      var contents = e.target.result;
                filesContent[index] = {content: contents, name: f.name.substring(0, f.name.lastIndexOf("."))};
-            
+
                ++loadFinished;
                if( loadFinished === document.getElementById("fileselect").files.length ){
                   var result = transfer(inputFormat, outputFormat, filesContent);
@@ -221,7 +221,7 @@
                   //result.map( function(data, index){
                   //   HTMLContent += "<li><a download='" + data.name + subfilename[outputFormat] + "' href='data:text/plain," + encodeURIComponent( data.content ) + "' target='_blank'>" + data.name + subfilename[outputFormat] + "</a></li>";
                   //});
-                  //HTMLContent += "</ul>"; 
+                  //HTMLContent += "</ul>";
                   //document.getElementById("outputFiles").innerHTML = HTMLContent;
                   for (let i in result) {
                     corpusXmlList.push({ name: result[i].name, content: result[i].content });
@@ -236,10 +236,10 @@
 
               }
             }
-            
+
             r.readAsText(f);
          });
-      
+
       });
 
 
@@ -248,20 +248,19 @@
 
          var result = corpusXmlList;
          var zip = new JSZip();
-         for (let i in result) {         
+         for (let i in result) {
            //var blob = new Blob([result[i].content], {type: "text/plain;charset=utf-8"});
            var dateStr = (new Date()).yyyymmdd();
            var filename = dateStr + '-' + result[i].name + '.html';     // after merging, result[0].name will be the valud in element id="corpus"
            zip.file(filename, result[i].content)
           }
-         const name = result[0].name
          zip.generateAsync({type:'blob'})
           .then(function(content) {
-            saveAs(content, name.substring(0, name.length -3))       // requires FileSaver.js
+            saveAs(content, application['name'])        // requires FileSaver.js
           })
       });
 
-   });      
+   });
    </script>
    <style type="text/css">
       body { margin: 0; line-height:150%; font-family: Microsoft JhengHei;}
@@ -270,7 +269,7 @@
         width: 90%;
         margin: 10px auto;
       }
-      
+
       #filedrag {
       	display: none;
       	font-weight: bold;
@@ -282,7 +281,7 @@
       	border-radius: 7px;
       	cursor: default;
       }
-      
+
       #filedrag.hover {
       	color: #f00;
       	border-color: #f00;
@@ -311,7 +310,7 @@
                   <li>選擇一或多份 MARKUS 的輸出檔，指定彙整後的文獻集名稱後，點選「進行轉換」鈕</li>
                   <li>轉換後的資料會先暫存起來，並顯示於下方的列表。</li>
                   <li>您可轉換出多份文獻集，再一併儲存成單一 ThdlExportXml 檔案</li>
-               </ul>                      
+               </ul>
              </td>
          </tr>
          </table>
