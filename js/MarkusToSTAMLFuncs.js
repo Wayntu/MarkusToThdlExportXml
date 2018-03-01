@@ -663,6 +663,7 @@ var MarkusToSTAMLFuncs = (function(){
 							result += '"status":""},'
 						}
 						result = result.substr(0, result.length-1) + '}'
+                                                const test = JSON.parse(result) // check the tag json format
 						tag.value = result
 						rootNode.setAttributeNode(tag);
 					}
