@@ -73,11 +73,11 @@ var MarkusToSTAMLFuncs = (function(){
 				   		jsonData[table[i].to] = node.nodeValue;
 				   	}
 				   }
-               
+
 				   if( jsonData[table[i].to].length === 1 ){
 				   	jsonData[table[i].to] = jsonData[table[i].to][0];
 				   }
-               
+
 				   if( jsonData[table[i].to].length === 0 ){
 				   	delete jsonData[table[i].to];
 				   }
@@ -89,7 +89,7 @@ var MarkusToSTAMLFuncs = (function(){
 			return jsonData;
 		};
 	}
-	
+
 	var tagTransformer = function( context ){
 	   var content = [];
 		var parser = new DOMParser();
@@ -125,7 +125,7 @@ var MarkusToSTAMLFuncs = (function(){
       //alert(JSON.stringify(content));
 		return content;
    }
-   
+
    // �]����S�M�ҳ]�p����Ƽҫ������A�ѡA�o�������B�z�۷�����...
    var extraTagHandling = function(node, contentList) {
       var firstChild = node.firstChild;
@@ -138,7 +138,7 @@ var MarkusToSTAMLFuncs = (function(){
          var commentContent = firstChild.getAttribute("value");      // a JSON-format array
          var commentArray = JSON.parse(commentContent);
          if (!Array.isArray(commentArray)) return null;
-         
+
          var commentItems = commentArray.map(function(s) {
             s = s.replace(/&#\((x?[0-9]+)\);/g, "&#$1;");
             var lines = s.split("\n");
@@ -148,13 +148,13 @@ var MarkusToSTAMLFuncs = (function(){
                lines.shift();
             }
             return { type: 'commentItem', subtype: category, content: lines.join("\n") };
-         });   
+         });
 
          // ���ɡAcontentList �̫���G�|���Ť��e�� span??
          var myLast = contentList.pop();
          if (myLast.type === 'span' && myLast.content === '') ;       // skip this node content
          else contentList.push(myLast);
-         
+
          if (contentList.length == 0) contentList = commentItems;
          else contentList.unshift({type:'comment', content:commentItems});
          return { type:tagType, content:contentList };
@@ -192,12 +192,12 @@ var MarkusToSTAMLFuncs = (function(){
          now.content = contentList;
          return now;
       }
-     
-      return null;         
-   }
-      
 
-   // �S�M�b�o�̪��B�z�覡���G���ǰ��D... 
+      return null;
+   }
+
+
+   // �S�M�b�o�̪��B�z�覡���G���ǰ��D...
 	var recursiveXML = function( node ){
 		var content = {};
 		var last = content;
@@ -211,7 +211,7 @@ var MarkusToSTAMLFuncs = (function(){
 		//}
       var myNodes = node.getElementsByTagName("*");
       allTag = myNodes.length;
-      
+
       if (allTag > 1) {
          var firstChild = node.firstChild;
          var tagType = firstChild.tagName;     // �Ȯɥ��� tagName �@�� tagType...
@@ -226,10 +226,10 @@ var MarkusToSTAMLFuncs = (function(){
                contentList[i] = childNodes[i].textContent;
             }
          }
-         
+
          var ret = extraTagHandling(node, contentList);
          if (ret === null)  ret = { type: tagType, content: contentList };
- 
+
           //alert(JSON.stringify(ret));
          return ret;
       }
@@ -260,14 +260,14 @@ var MarkusToSTAMLFuncs = (function(){
 						delete now.linkdata;
 					}
 				}
-            
+
 				last = now;               // referece to the previous result
 				now.content = {};         // create a deeper sub-object
-				now = now.content;        // move object reference to deeper sub-object 
+				now = now.content;        // move object reference to deeper sub-object
 			}
 		}
       //alert(allTag + ' - Wrapup: ' + JSON.stringify(content));
-		
+
 		//console.log( content, allTag, foundTag );
 		if( allTag !== foundTag ){
 			var lastNode = null;
@@ -279,37 +279,37 @@ var MarkusToSTAMLFuncs = (function(){
 				for( var i = 0 ; i < tagTable.length ; i++ ){
 					var tags = node.evaluate( tagTable[i].tag, child, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null );
 					var tag;
-					
+
 					while( tag = tags.iterateNext() ){
 						++nowFoundTag;
-					}		
+					}
 				}
-				
+
 				if( allTag - nowFoundTag !== diff ){
 					//console.log( lastNode );
 					now.type = lastNode.nodeName;
 					if( lastNode.getAttribute("subtype") ){
 						now.subtype = lastNode.getAttribute("subtype");
 					}
-					
+
 					diff = allTag - nowFoundTag;
-					
+
 					last = now;
 					now.content = {};
 					now = now.content;
-				}			
+				}
 				lastNode = child;
 				--allTag;
 			}
-			
+
 			if( diff > 0 ){
 				now.type = lastNode.nodeName;
 				if( lastNode.getAttribute("subtype") ){
 					now.subtype = lastNode.getAttribute("subtype");
 				}
-				
+
 				diff = allTag - nowFoundTag;
-				
+
 				last = now;
 				now.content = {};
 				now = now.content;
@@ -320,16 +320,16 @@ var MarkusToSTAMLFuncs = (function(){
       //alert('last: ' + node.firstChild.nodeType + ': ' + JSON.stringify(last.content));
 		return content;         // content and last reference to the same object!
 	}
-	
+
 	var XMLtoObject = function(xmlNode){
 		if( xmlNode.childNodes.length === 1 && xmlNode.firstChild.nodeType === 3 ){
 			return xmlNode.firstChild.nodeValue.escape();
 		}
-    
+
     if( xmlNode.nodeType === 3 ){
       return xmlNode.nodeValue;
     }
-		
+
 		var object = [];
     var isArray = false;
 		var childNodes = xmlNode.childNodes;
@@ -344,7 +344,7 @@ var MarkusToSTAMLFuncs = (function(){
         object.push(obj);
       }
 		}
-    
+
     var attr = xmlNode.attributes;
     for( var i = 0 ; i < attr.length ; ++i ){
       var obj = {};
@@ -354,7 +354,7 @@ var MarkusToSTAMLFuncs = (function(){
       obj[attr[i].nodeName] = attr[i].nodeValue;
       object.push(obj);
     }
-    
+
 		if( !isArray ){
       var realObj = {};
       for( var i = 0 ; i < object.length ; ++i ){
@@ -367,18 +367,31 @@ var MarkusToSTAMLFuncs = (function(){
 		return object;
 	}
 
+
 	var generateTag = function( object ) {
 		if (String.isString(object)) return object;
-      if (Array.isArray(object)) {           // 2017-11-26
+        if (Array.isArray(object)) {           // 2017-11-26
          var s = object.map(function(e) {
             return generateTag(e);
          });
          //return "<span class='unknown'>" + s + "</span>";
          return s;
-      }
+	  }
+	    // var XmlMappedToMarkus = {
+		// 	Category: '',
+		// 	Term: '',
+		// 	CbdbId: '',
+
+		// }
+		// Markus	|	DocuXML
+		// 姓名: fullname			| PersonName
+		// 別名: partialname		| PersonName + othername
+		// 時間: timePeriod		| Date
+		// 地名: placeName		| LocName
+		// 官名: officialTitle	| Office
 		var tag = '<span class="' ;
 		var tagName, moreThanOneIdData, moreThanOneIdAttribute;
-		if( object.type === "person" ){
+		if( object.type === "PersonName" ){
 			if( object.subtype === "othername" ){
 				tagName = "partialName";
 				moreThanOneIdData = "linkdata";
@@ -395,12 +408,12 @@ var MarkusToSTAMLFuncs = (function(){
 				moreThanOneIdAttribute = "CbdbId";       // 2017-03-28: from "cbdbid" to "CbdbId"
 			}
 		}
-		else if(object.type === "location"){
+		else if(object.type === "LocName"){
 			tagName = "placeName";
-			moreThanOneIdData = "userdata";
-			moreThanOneIdAttribute = "note";
+			moreThanOneIdData = "linkdata";
+			moreThanOneIdAttribute = "placename_id";
 		}
-		else if(object.type === "datetime"){
+		else if(object.type === "Date"){
 			tagName = "timePeriod";
 			moreThanOneIdData = "userdata";
 			moreThanOneIdAttribute = "note";
@@ -415,21 +428,28 @@ var MarkusToSTAMLFuncs = (function(){
 			moreThanOneIdData = "userdata";
 			moreThanOneIdAttribute = "note";
 		}
+		// 2017/12/21: added the office, span type
+		else if (object.type === "Office") {
+			tagName = "officialTitle"
+		}
+		else if (object.type === "span") {
+			//console.log(object)
+		}
 		else {
-		   // check if object.type is "Udef_xxx"...
-		   var s = object.type;
-         if (typeof(s) === 'undefined') {
-            alert("Error in generateTag(): " + JSON.stringify(object));    // e.g., not an object but an array of objects: [{type,content}]
-         }
-		   var ret = '';
-		   if (s.substr(0,5) === 'Udef_') {
-            tagName = s.substr(5);
-	         moreThanOneIdData = "userdata";
-            moreThanOneIdAttribute = "note";
-		   }
-		   else {
-            return "<" + object.type + ((object.subtype)? " subtype = '" + object.subtype + "'": "")+ ">" +  object.content + "</" + object.type + ">";
-		   }
+			// check if object.type is "Udef_xxx"...
+			var s = object.type;
+			if (typeof(s) === 'undefined') {
+				alert("Error in generateTag(): " + JSON.stringify(object));    // e.g., not an object but an array of objects: [{type,content}]
+			}
+			var ret = '';
+			if (s.substr(0,5) === 'Udef_') {
+				tagName = s.substr(5);
+				moreThanOneIdData = "userdata";
+				moreThanOneIdAttribute = "note";
+			}
+			else {
+				return "<" + object.type + ((object.subtype)? " subtype = '" + object.subtype + "'": "")+ ">" +  object.content + "</" + object.type + ">";
+			}
 		}
 
 		tag += tagName + " markup unsolved";
@@ -437,29 +457,41 @@ var MarkusToSTAMLFuncs = (function(){
 			tag += " moreThanOneId";
 		}
 		tag += '" type="' + tagName + '"';
-		if( object.linkdata ){
-			for( var key in object.linkdata ){
-				if( key === "refID" ){
-					continue;
-				}
-				tag += " " + key + '="' + object.linkdata[key] + '"';
+		// if( object.linkdata ){
+		// 	for( var key in object.linkdata ){
+		// 		if( key === "refID" ){
+		// 			continue;
+		// 		}
+		// 		tag += " " + key + '="' + object.linkdata[key] + '"';
+		// 	}
+		// }
+
+		// if( object.userdata ){
+		// 	for( var key in object.userdata ){
+		// 		if( key === "note" ){
+		// 			tag += " " + tagName.toLowerCase() + '_id="' + object.userdata[key] + '"'
+		// 		}
+		// 		else if( key === "refID" ){
+		// 			continue;
+		// 		}
+		// 		else {
+		// 			tag += " " + key + '="' + object.userdata[key] + '"';
+		// 		}
+		// 	}
+		// }
+		for (var key in object) {
+			if (key === 'type' && key == 'Type') {
+				continue
+			} else if (key === 'CbdbId') {
+				tag += ' cbdbid' + '="' + object[key] + '"'
+			} else if (key === 'Term') {
+				continue
+			} else if (key ==='Category') {
+				continue
+			} else if (key ==='refId') {
+				tag += ' placename_id' + '="' + object[key] + '"'
 			}
 		}
-
-		if( object.userdata ){
-			for( var key in object.userdata ){
-				if( key === "note" ){
-					tag += " " + tagName.toLowerCase() + '_id="' + object.userdata[key] + '"'
-				}
-				else if( key === "refID" ){
-					continue;
-				}
-				else {
-					tag += " " + key + '="' + object.userdata[key] + '"';
-				}
-			}
-		}
-
 		tag += ">";
 		//console.log( tag );
 
@@ -471,19 +503,18 @@ var MarkusToSTAMLFuncs = (function(){
 		}
 
 		tag += "</span>"
-
 		return tag;
 	}
-	
+
 	var objectToXML = function(object){
 		if( String.isString(object) ){
 			return object.escape();
 		}
-		
+
 		if( Array.isArray(object) ){
 			return object.map(objectToXML).join("");
 		}
-		
+
 		var xmlString = "";
 		for( var key in object ){
 			if( key === "#text" ) continue;
@@ -491,9 +522,9 @@ var MarkusToSTAMLFuncs = (function(){
 		}
 		return xmlString;
 	}
-	
+
 	function appendCustomizedTags(customizedTags) {        // Tu
-		//{ type: "recipe",  
+		//{ type: "recipe",
 		//  tag: "//span[@type='Recipe']",
 		//  userdata: [ { from: "/span/@recipe_id", to: "note"} ]}
 	   var tagHash = {};
@@ -504,12 +535,12 @@ var MarkusToSTAMLFuncs = (function(){
 	      var regex = /\/\/span\[@type='(.+)'\]/g;
          var matches = regex.exec(tagPath);
          if (matches === null) continue;          // 2017-06-08: skip if no matches found
-         else {               
+         else {
 	         var tag = matches[1];
 	         tagHash[tag] = 1;
          }
 	   }
-	   for (var tag in customizedTags) {           // �N Markus html �� <span type="xxx"> �ন <Udef_xxx> 
+	   for (var tag in customizedTags) {           // �N Markus html �� <span type="xxx"> �ন <Udef_xxx>
 	      if (!tagHash[tag]) {
 	         var tagType = 'Udef_' + tag;          // �b ThdlExportXml �����ҦW�١A�� Udef_<tag>
 	         var tagPath = "//span[@type='" + tag + "']";
@@ -532,7 +563,7 @@ var MarkusToSTAMLFuncs = (function(){
 			var dom = tryParseXML(context);             // 2016-09-16
 			if (dom === null) return null;
 
-			metaHidden = (dom) ? dom.getElementById("metadataHidden") : null;
+			metaHidden = (dom) ? dom.getElementById("metadataHidden") : null; // 2018-0201
 			//var metaHidden = (new DOMParser()).parseFromString(context, "text/xml").getElementById("metadataHidden");
 
 			// Tu: 2017-01-19 firstChild <div ... tag="...">
@@ -552,7 +583,6 @@ var MarkusToSTAMLFuncs = (function(){
 				application: applicationTransform(context),
 			};
 		},
-      
 		articleInformation: function( context ){      // get the "article" information from context (e.g., Markus html)
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString(context, "text/xml");
@@ -596,7 +626,7 @@ var MarkusToSTAMLFuncs = (function(){
                   // tagTransformer �u�B�z��e tag �]�Ҧp <span type="passage" id="...">�^���U�����e�A�]�� type, id �������ݩʡA�������e���o
                   var typeValId = node.firstChild.getAttribute("id");    // �p�G passage �S�� id �ݩʡA�N�|�O null
                   //alert(typeValId);
-                  var transformedContent = tagTransformer(nodeXml);    
+                  var transformedContent = tagTransformer(nodeXml);
 						sections[i].content.push({ type: "section", typeValId: typeValId, content: transformedContent });
 					}
 				} while( node = nodes.iterateNext() );
@@ -608,48 +638,87 @@ var MarkusToSTAMLFuncs = (function(){
 
 		mergeToContext: function( input ){
 			var metadata = input.document.metadata;
+			//var application = input.document.application;
 			var sections = input.article;
-			var application = input.document.application;
-
 			var parser = new DOMParser();
-			var xmlDoc = parser.parseFromString( "<div class='doc'><pre></pre></div>" ,"text/xml");
-
+			var xmlDoc = parser.parseFromString( "<div class='doc'><pre contenteditable='false'></pre></div>" ,"text/xml");
 			// metadata
 			var rootNode = xmlDoc.evaluate("/div[@class='doc']", xmlDoc, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null).iterateNext();
 
 			var filename = xmlDoc.createAttribute("filename");
-			filename.value = metadata.filename;
+			filename.value = ''
+			for ( let i = 0; i < metadata.filename.length; i++) {
+				let word = metadata.filename.charCodeAt(i)
+				if (word > 127) {
+					let temp = PINYIN_CACHE[metadata.filename[i]]
+					if (temp != 'undefined')
+						filename.value += temp[0].charAt(0).toUpperCase() + temp[0].slice(1)
+					else
+						filename.value += 'Unknow'
+				} else {
+					filename.value += metadata.filename[i]
+				}
+			}
 			rootNode.setAttributeNode(filename);
 
 			// application
 			if( application ){
 					if( application.tag ){
-						var tag = xmlDoc.createAttribute("tag");
-						tag.value = application.tag;
+						const tag = xmlDoc.createAttribute("tag");
+						let result = '{ '
+						for (let i in application.tag) {
+							result += '"' + application.tag[i] + '":{'
+							result += '"buttonName":"' + application.tag[i] + '",'
+							result += '"visible":true,'
+							result += '"color":"#333399",'
+							result += '"status":""},'
+						}
+						result = result.substr(0, result.length-1) + '}'
+                                                const test = JSON.parse(result) // check the tag json format
+						tag.value = result
 						rootNode.setAttributeNode(tag);
 					}
 			}
-
 			// sections
 			var sectionNumber = 0;
-			for( var i = 0 ; i < sections.length ; i++ ){
-				for( var j = 0 ; j < sections[i].content.length ; j++, sectionNumber++ ){
-					var section = '<span class="passage" type="passage" id="passage' + sectionNumber + '"><span class="commentContainer" value="[]"><span class="glyphicon glyphicon-comment" type="commentIcon" style="display:none" aria-hidden="true" data-markus-passageid="passage' + sectionNumber + '"></span></span>';
-					for( var k = 0 ; k < sections[i].content[j].content.length ; k++ ){
-						section += generateTag( sections[i].content[j].content[k] );
+			for( var i = 0 ; i < sections.length ; i++ ) {
+
+				let chapter = sections[i];
+				for( var j = 0 ; j < chapter.content.length ; j++, sectionNumber++ ){
+					let section = chapter.content[j]
+
+					// comment
+				 	const firstContent = section.content[0]
+					let comment = ''
+					let k = 0
+					if (firstContent.type === 'CommentItem') {
+						k = 1
+						comment += '&quot;'
+						for (let t = 0; t < firstContent.content.length; t++) {
+							let word = firstContent.content.charCodeAt(t)
+							if (word > 127) {
+								comment += '&amp;#(' + word + ');'
+							} else if (word == 34 || word == 39) {	// parse ' and "
+								comment += '\\&quot;'
+							} else {
+								comment += firstContent.content[t]
+							}
+						}
+						comment += '&quot;'
 					}
-					section += "</span>\n\n";
-					appendAllChildren( section, xmlDoc.getElementsByTagName("div")[0].getElementsByTagName("pre")[0] );
+					var context = '<span class="passage" type="passage" id="passage' + sectionNumber + '"><span class="commentContainer" value="[' + comment +']"><span class="glyphicon glyphicon-comment" type="commentIcon" style="" aria-hidden="true" data-markus-passageid="passage' + sectionNumber + '">\n</span></span>';
+					for( k ; k < section.content.length ; k++ ){
+						context += generateTag( section.content[k] );
+					}
+					context += "</span>\n\n";
+					appendAllChildren( context, xmlDoc.getElementsByTagName("div")[0].getElementsByTagName("pre")[0] );
 				}
 			}
-
 			var metadataNode = xmlDoc.createElement("div");
 			metadataNode.setAttribute("id", "metadataHidden");
 			metadataNode.setAttribute("style", "display: none");
-			//console.log(metadata);
 			appendAllChildren( objectToXML(metadata), metadataNode );
 			xmlDoc.getElementById("passage0").appendChild( metadataNode );
-
 			return (new XMLSerializer()).serializeToString(xmlDoc) ;
 		}
 	};

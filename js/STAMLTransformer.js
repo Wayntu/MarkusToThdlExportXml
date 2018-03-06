@@ -7,7 +7,7 @@ var STAMLTransformer = (function(){
 	}
 
 	STAMLTransformer.prototype.transform = function(context) {
-      // ­YÂà´«¦¨ STAML ³~¤¤¦³¿ùº|¡A´N«Ü¥i¯à¬O¦]¬°¥H¤Uªº merge() ¨S³B²z¦n            
+      // ï¿½Yï¿½à´«ï¿½ï¿½ STAML ï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½|ï¿½Aï¿½Nï¿½Ü¥iï¿½ï¿½Oï¿½]ï¿½ï¿½ï¿½Hï¿½Uï¿½ï¿½ merge() ï¿½Sï¿½Bï¿½zï¿½n            
 		return this.merge( this.documentInformation(context),
                          this.articleInformation(context) );
 		/* return this.merge( this.metadataTransformer(context),
@@ -19,11 +19,12 @@ var STAMLTransformer = (function(){
 
 
 	STAMLTransformer.prototype.transformBack = function(STAMLcontext){
-		//console.log(this);
+
       //alert('transformBack1: ' + JSON.stringify(STAMLcontext));
-      var contextObj = this.unmerge(STAMLcontext);
+		var contextObj = this.unmerge(STAMLcontext);
       //alert('transformBack2: ' + JSON.stringify(contextObj));     // 2017-04-07: allows content to be an array...
-		var result = this.mergeToContext(contextObj);                 // result: e.g., ThdlExportXml, MarkusHtml
+		var result = this.mergeToContext(contextObj);
+		                 // result: e.g., ThdlExportXml, MarkusHtml
       //alert('transformBack3: ' + JSON.stringify(result));
       return result;
 	}
@@ -113,24 +114,34 @@ var STAMLTransformer = (function(){
 			var object = {};
 			object.type = childNodes[i].nodeName;
  			
-         if( childNodes[i].hasAttribute("subtype") ){
+			if( childNodes[i].hasAttribute("subtype") ){
 				object.subtype = childNodes[i].getAttribute("subtype");
 			}
-			
-         // Tu: 20170410 (note: "refId" here but not "typeValId" anymore)
-         if( childNodes[i].hasAttribute("refId") ){
-				object.refId = childNodes[i].getAttribute("refId");
+			// Tu: 20170410 (note: "refId" here but not "typeValId" anymore)
+			if( childNodes[i].hasAttribute("RefId") ) {
+				object.refId = childNodes[i].getAttribute("RefId");
 			}
-			
+			if( childNodes[i].hasAttribute("Term") ) {
+				object.Term = childNodes[i].getAttribute("Term");
+			}
+			if( childNodes[i].hasAttribute("Type") ) {
+				object.Type = childNodes[i].getAttribute("Type");
+			}
+			if( childNodes[i].hasAttribute("CbdbId") ) {
+				object.CbdbId = childNodes[i].getAttribute("CbdbId");
+			}
+			if( childNodes[i].hasAttribute("Category") ) {
+				object.Category = childNodes[i].getAttribute("Category");
+			}
 			for( var name in setting ){
 				if( childNodes[i].hasAttribute(name+"Ref") ){
 					object[name] = setting[name][childNodes[i].getAttribute(name+"Ref")];
 				}
 			}
-			
-         var nextIsArray = (object.type === "chapter" || object.type === "section");
- 			object.content = this.XMLtoTaggedObject(nextIsArray, setting, childNodes[i]);
- 			array.push(object);
+				
+			var nextIsArray = (object.type === "chapter" || object.type === "section");
+			object.content = this.XMLtoTaggedObject(nextIsArray, setting, childNodes[i]);
+			array.push(object);
 		}
       //alert(childNodes.length + "\n" + (new XMLSerializer()).serializeToString(xmlNode));
       //alert("Continue" + "\n" + JSON.stringify(array) + "\n" + isArray);
@@ -186,12 +197,25 @@ var STAMLTransformer = (function(){
 		if ( object.subtype ){
 			xmlString += " subtype='" + object.subtype + "'";
 		}
-
       // Tu: 20170410      
-      if (object.typeValId) {
+		if (object.typeValId) {
 			xmlString += " refId='" + object.typeValId + "'";
-      }
-		
+		}
+		if (object.Term) {
+			xmlString += " Term='" + object.Term + "'";
+		}
+		if (object.Category) {
+			xmlString += " Category='" + object.Category + "'";
+		}
+		if (object.CbdbId) {
+			xmlString += " CbdbId='" + object.CbdbId + "'";
+		}
+		if (object.RefId) {
+			xmlString += " RefId='" + object.RefId + "'";
+		}
+		if (object.Type) {
+			xmlString += " Type='" + object.Type + "'";
+		}
 		for( var name in setting ){        // name: userdata, linkdata
 			if( object[name] !== undefined ){
 				xmlString += " " + name + "Ref='" + setting[name].length + "'";
@@ -251,7 +275,7 @@ var STAMLTransformer = (function(){
 
 		*/
 
-      //alert(JSON.stringify(article));
+	  //alert(JSON.stringify(article));
 		var xmlString = "<STAML><metadata></metadata><article></article><application></application><userdata></userdata><linkdata></linkdata></STAML>";
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(xmlString, "text/xml");
@@ -306,7 +330,7 @@ var STAMLTransformer = (function(){
 		//var metadata = {}, sections = [], application = [];
 		var parser = new DOMParser();
 		var xmlDoc = parser.parseFromString(STAMLcontext, "text/xml");
-		
+
 		var setting = { userdata: [], linkdata: [], application: [] };
 		var itemName = { userdata: "data", linkdata: "link", application: "appdata"};
 		
@@ -328,7 +352,8 @@ var STAMLTransformer = (function(){
 		
 		/* article */
 		var articleNode = xmlDoc.getElementsByTagName("article")[0];
-      //alert('A1: ' + (new XMLSerializer()).serializeToString(articleNode));
+	  //alert('A1: ' + (new XMLSerializer()).serializeToString(articleNode));
+
 		article = this.XMLtoTaggedObject(true, setting, articleNode);
       //alert('A2: ' + JSON.stringify(article));
 		
@@ -350,8 +375,6 @@ var STAMLTransformer = (function(){
 			}
 		}
 		
-		//console.log(document);
-		//console.log(article);
 
 		return {
 			document: document,
