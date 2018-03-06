@@ -10,11 +10,14 @@
       <script src="js/ThdlExportXMLToSTAMLFuncs.js"></script>
       <script src="js/FileSaver.min.js"></script>
       <script src="js/jszip.min.js"></script>
+      <script src="js/pinyinEngine.full.js"></script>
    <script>
       var inputFormat = 'THDLExportXML';
       var outputFormat = 'MARKUS';
       var corpusXmlList = [];       // Tu: add for output multiple corpuses
       var application = {} // handle the user defined tag mainly
+      const PINYIN_CACHE = pinyinEngine.cache();
+
       function tryParseXML(xmlString) {
          try {
             var parser = new DOMParser();

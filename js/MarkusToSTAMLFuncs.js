@@ -640,14 +640,25 @@ var MarkusToSTAMLFuncs = (function(){
 			var metadata = input.document.metadata;
 			//var application = input.document.application;
 			var sections = input.article;
-
 			var parser = new DOMParser();
 			var xmlDoc = parser.parseFromString( "<div class='doc'><pre contenteditable='false'></pre></div>" ,"text/xml");
 			// metadata
 			var rootNode = xmlDoc.evaluate("/div[@class='doc']", xmlDoc, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null).iterateNext();
 
 			var filename = xmlDoc.createAttribute("filename");
-			filename.value = metadata.filename;
+			filename.value = ''
+			for ( let i = 0; i < metadata.filename.length; i++) {
+				let word = metadata.filename.charCodeAt(i)
+				if (word > 127) {
+					let temp = PINYIN_CACHE[metadata.filename[i]]
+					if (temp != 'undefined')
+						filename.value += temp[0].charAt(0).toUpperCase() + temp[0].slice(1)
+					else
+						filename.value += 'Unknow'
+				} else {
+					filename.value += metadata.filename[i]
+				}
+			}
 			rootNode.setAttributeNode(filename);
 
 			// application
